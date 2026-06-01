@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>RemitosApp</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚛</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- ── Librerías externas (globales) ── -->
+  <!-- jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- jsPDF-AutoTable -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <!-- SheetJS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════
+       PANTALLA DE LOGIN
+  ═══════════════════════════════════ -->
+  <div id="login-screen" class="screen">
+    <div class="login-card">
+      <div class="login-brand">
+        <span class="brand-icon">🚛</span>
+        <h1 class="brand-name">Remitos</h1>
+        <p class="brand-sub">Sistema de gestión de transporte</p>
+      </div>
+      <button id="btn-google-login" class="btn btn-google">
+        <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
+          <path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 2.9l5.7-5.7C34.5 6.5 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.9z"/>
+          <path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 16.1 19 13 24 13c3.1 0 5.8 1.1 8 2.9l5.7-5.7C34.5 6.5 29.6 4 24 4 16.3 4 9.7 8.4 6.3 14.7z"/>
+          <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.3 35.3 26.8 36 24 36c-5.2 0-9.6-3.3-11.3-8H6.3C9.6 35.5 16.3 44 24 44z"/>
+          <path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.3 4.1-4.2 5.4l.1.1 6.2 5.2C37.1 38 44 33 44 24c0-1.3-.1-2.7-.4-3.9z"/>
+        </svg>
+        Continuar con Google
+      </button>
+      <p id="login-error" class="error-msg" aria-live="polite"></p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════
+       PANTALLA PRINCIPAL
+  ═══════════════════════════════════ -->
+  <div id="app-screen" class="screen hidden">
+
+    <header class="app-header">
+      <div class="header-brand">
+        <span>🚛</span>
+        <span class="brand-name-sm">Remitos</span>
+      </div>
+      <div class="header-actions">
+        <button id="btn-settings" class="btn-icon" title="Configuración IA / OCR" aria-label="Configuración">
+          ⚙️
+        </button>
+        <div class="user-chip">
+          <img id="user-avatar" src="" alt="" class="user-avatar" />
+          <span id="user-name" class="user-name-text"></span>
+        </div>
+        <button id="btn-logout" class="btn btn-ghost btn-sm">Salir</button>
+      </div>
+    </header>
+
+    <main class="app-main">
+
+      <!-- Toolbar -->
+      <section class="toolbar" aria-label="Acciones principales">
+        <div class="toolbar-primary">
+          <button id="btn-new" class="btn btn-primary">
+            <span aria-hidden="true">＋</span> Nuevo Remito
+          </button>
+          <button id="btn-scan" class="btn btn-secondary">
+            <span aria-hidden="true">📷</span> Escanear
+          </button>
+        </div>
+
+        <div class="toolbar-filters">
+          <div class="filter-group">
+            <label class="filter-label" for="filter-from">Desde</label>
+            <input type="date" id="filter-from" class="input input-sm" />
+          </div>
+          <div class="filter-group">
+            <label class="filter-label" for="filter-to">Hasta</label>
+            <input type="date" id="filter-to" class="input input-sm" />
+          </div>
+          <button id="btn-filter" class="btn btn-outline btn-sm">Filtrar</button>
+          <button id="btn-clear-filter" class="btn btn-ghost btn-sm" title="Limpiar filtro">✕</button>
+        </div>
+
+        <div class="toolbar-export">
+          <span class="export-label">Exportar:</span>
+          <button id="btn-export-pdf" class="btn btn-outline btn-xs">PDF</button>
+          <button id="btn-export-excel" class="btn btn-outline btn-xs">Excel</button>
+          <span class="export-divider">|</span>
+          <button id="btn-import" class="btn btn-ghost btn-xs">Importar</button>
+          <input type="file" id="import-file" accept=".xlsx,.xls,.csv" class="visually-hidden" aria-label="Importar archivo" />
+        </div>
+      </section>
+
+      <!-- Stats Bar -->
+      <div class="stats-bar" id="stats-bar" aria-live="polite">
+        <div class="stat-item">
+          <span class="stat-label">Remitos</span>
+          <span id="stat-count" class="stat-value">—</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-label">Total Litros</span>
+          <span id="stat-litros" class="stat-value">—</span>
+        </div>
+        <div id="filter-badge" class="filter-badge hidden">
+          <span>Filtrado</span>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-container">
+        <div id="loading-state" class="state-view">
+          <div class="spinner"></div>
+          <span>Cargando remitos…</span>
+        </div>
+
+        <div id="empty-state" class="state-view hidden">
+          <span class="state-icon">📄</span>
+          <p>No hay remitos registrados.</p>
+          <button class="btn btn-primary" id="btn-new-empty">+ Crear el primero</button>
+        </div>
+
+        <div id="table-wrapper" class="hidden">
+          <table class="remitos-table" id="remitos-table" aria-label="Listado de remitos">
+            <thead>
+              <tr>
+                <th>N° Remito</th>
+                <th>Fecha</th>
+                <th>Chofer</th>
+                <th>Desde</th>
+                <th>Hasta</th>
+                <th class="col-num">Litros</th>
+                <th class="col-actions">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="remitos-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ═══════════════════════════════════
+       MODAL: NUEVO / EDITAR REMITO
+  ═══════════════════════════════════ -->
+  <div id="modal-remito" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-remito-title">
+    <div class="modal-backdrop" data-close="modal-remito"></div>
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h2 id="modal-remito-title" class="modal-title">Nuevo Remito</h2>
+        <button class="modal-close" data-close="modal-remito" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="edit-id" />
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="field-numero">N° de Remito</label>
+            <input type="text" id="field-numero" class="input" placeholder="Ej: 0001-00123" autocomplete="off" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="field-fecha">Fecha</label>
+            <input type="date" id="field-fecha" class="input" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="field-chofer">Nombre del Chofer</label>
+          <input type="text" id="field-chofer" class="input" placeholder="Nombre completo" autocomplete="name" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="field-desde">Bodega Origen (Desde)</label>
+            <input type="text" id="field-desde" class="input" placeholder="Origen" autocomplete="off" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="field-hasta">Bodega Destino (Hasta)</label>
+            <input type="text" id="field-hasta" class="input" placeholder="Destino" autocomplete="off" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="field-litros">Cantidad (Litros)</label>
+          <input type="number" id="field-litros" class="input" placeholder="0.00" min="0" step="0.01" inputmode="decimal" />
+        </div>
+        <p id="form-error" class="error-msg" aria-live="polite"></p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" data-close="modal-remito">Cancelar</button>
+        <button id="btn-save" class="btn btn-primary">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════
+       MODAL: ESCANEAR REMITO
+  ═══════════════════════════════════ -->
+  <div id="modal-scan" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-scan-title">
+    <div class="modal-backdrop" data-close="modal-scan"></div>
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h2 id="modal-scan-title" class="modal-title">Escanear Remito</h2>
+        <button class="modal-close" data-close="modal-scan" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="scan-drop-area" class="scan-drop-area">
+          <label for="scan-image" class="scan-label">
+            <span class="scan-icon">📷</span>
+            <span class="scan-text-main">Tomá una foto o elegí una imagen</span>
+            <span class="scan-text-sub">JPG, PNG — hasta 10MB</span>
+            <input type="file" id="scan-image" accept="image/*" capture="environment" class="visually-hidden" />
+          </label>
+        </div>
+        <img id="scan-preview" class="scan-preview hidden" alt="Vista previa del remito" />
+        <div id="scan-status" class="scan-status hidden">
+          <div class="spinner spinner-sm"></div>
+          <span>Analizando con IA…</span>
+        </div>
+        <div id="scan-result-msg" class="scan-result hidden">
+          ✓ Datos extraídos. Revisá los campos antes de guardar.
+        </div>
+        <p id="scan-error" class="error-msg" aria-live="polite"></p>
+        <div id="ai-key-warning" class="info-box hidden">
+          <strong>⚠️ Clave de IA no configurada.</strong><br/>
+          Para usar OCR, configurá tu API Key de Claude en ⚙️ Configuración.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" data-close="modal-scan">Cancelar</button>
+        <button id="btn-analyze" class="btn btn-secondary" disabled>Analizar imagen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════
+       MODAL: CONFIRMAR ELIMINACIÓN
+  ═══════════════════════════════════ -->
+  <div id="modal-delete" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-delete-title">
+    <div class="modal-backdrop" data-close="modal-delete"></div>
+    <div class="modal-panel modal-sm">
+      <div class="modal-header">
+        <h2 id="modal-delete-title" class="modal-title">Eliminar Remito</h2>
+      </div>
+      <div class="modal-body">
+        <p>¿Eliminás el remito <strong id="delete-remito-num"></strong>? Esta acción no se puede deshacer.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" data-close="modal-delete">Cancelar</button>
+        <button id="btn-confirm-delete" class="btn btn-danger">Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════
+       MODAL: CONFIGURACIÓN DE IA
+  ═══════════════════════════════════ -->
+  <div id="modal-settings" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-settings-title">
+    <div class="modal-backdrop" data-close="modal-settings"></div>
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h2 id="modal-settings-title" class="modal-title">⚙️ Configuración IA</h2>
+        <button class="modal-close" data-close="modal-settings" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-body">
+
+        <div class="form-group">
+          <label class="form-label" for="field-ai-provider">Proveedor de IA para escaneo</label>
+          <select id="field-ai-provider" class="input">
+            <option value="gemini">Google Gemini Flash 2.5 (gratuito)</option>
+            <option value="claude">Anthropic Claude (Sonnet)</option>
+            <option value="openai">OpenAI GPT-4o</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="field-ai-key">API Key</label>
+          <input type="password" id="field-ai-key" class="input" placeholder="Pegá tu clave aquí…" autocomplete="off" />
+          <p id="settings-hint" class="form-hint"></p>
+        </div>
+
+        <div class="info-box">
+          🔒 Tu clave se guarda <strong>solo en este dispositivo</strong>. No se envía a ningún servidor propio.
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" data-close="modal-settings">Cancelar</button>
+        <button id="btn-save-settings" class="btn btn-primary">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="false"></div>
+
+  <!-- ── Módulos de la app (ES Modules) ── -->
+  <script type="module" src="js/app.js"></script>
+
+</body>
+</html>
