@@ -31,7 +31,6 @@ export function initUI({ Auth, DB }) {
     "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
   return { mount };
 }
-
 function mount() {
   // Auth
   $("#btn-google-login").addEventListener("click", handleLogin);
@@ -83,13 +82,12 @@ function mount() {
   $("#btn-save-settings").addEventListener("click", handleSaveSettings);
   $("#field-ai-provider").addEventListener("change", (e) => updateSettingsHint(e.target.value));
 }
-}
-  // Cerrar modales
-  document.addEventListener("click", (e) => {
-    const t = e.target.closest("[data-close]");
-    if (t) closeModal(t.dataset.close);
-  });
 
+// Cerrar modales
+document.addEventListener("click", (e) => {
+  const t = e.target.closest("[data-close]");
+  if (t) closeModal(t.dataset.close);
+});
   // Auth observer
   _Auth.onAuthChanged(async (user) => {
     if (user) {
