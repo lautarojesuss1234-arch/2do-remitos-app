@@ -1,170 +1,150 @@
 // ═══════════════════════════════════════════════════════════
 //  db.js — Operaciones CRUD con Firestore
+//  Soporta: remitos personales (/users/{uid}/remitos)
+//           remitos de grupo   (/groups/{groupId}/remitos)
 // ═══════════════════════════════════════════════════════════
 
 import {
-  getFirestore,
-  collection,
-  doc,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  query,
-  orderBy,
-  where,
-  onSnapshot,
-  Timestamp,
-  serverTimestamp,
+  getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
+  query, orderBy, where, onSnapshot, Timestamp, serverTimestamp,
+  setDoc, getDoc, arrayUnion, arrayRemove,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 import { APP } from "./config.js";
 
-/** @type {import('firebase/firestore').Firestore} */
 let db;
+let activeUnsubscribe  = null;
+let groupsUnsubscribe  = null;
 
-/** Función para cancelar la suscripción activa de remitos */
-let activeUnsubscribe = null;
-
-/**
- * Inicializa el módulo de base de datos.
- * @param {import('firebase/app').FirebaseApp} firebaseApp
- */
 export function initDB(firebaseApp) {
   db = getFirestore(firebaseApp);
-
   return {
-    subscribeRemitos,
-    addRemito,
-    updateRemito,
-    deleteRemito,
-    unsubscribeAll,
+    subscribeRemitos, addRemito, updateRemito, deleteRemito, unsubscribeAll,
+    subscribeUserGroups, createGroup, inviteMember, removeMember,
+    saveUserProfile, getUserProfile, resolveInvite, unsubscribeGroups,
   };
 }
 
+// ── Helpers de ruta ─────────────────────────────────────
+function getRemitosRef(ctx) {
+  return ctx.type === "group"
+    ? collection(db, "groups", ctx.groupId, "remitos")
+    : collection(db, "users", ctx.uid, "remitos");
+}
+
+function getDocRef(ctx, id) {
+  return ctx.type === "group"
+    ? doc(db, "groups", ctx.groupId, "remitos", id)
+    : doc(db, "users", ctx.uid, "remitos", id);
+}
+
 // ── Suscripción en tiempo real ──────────────────────────
-
-/**
- * Suscribe a los remitos en tiempo real.
- * Siempre ordena de más reciente a más antiguo.
- * Soporta filtro opcional por rango de fechas.
- *
- * @param {object}   options
- * @param {Function} options.onData   - Recibe el array de remitos cada vez que cambia
- * @param {Function} options.onError  - Recibe el error si la suscripción falla
- * @param {object}   [options.filters]
- * @param {string}   [options.filters.from]  - Fecha ISO "YYYY-MM-DD" inicio del rango
- * @param {string}   [options.filters.to]    - Fecha ISO "YYYY-MM-DD" fin del rango
- */
-function subscribeRemitos({ onData, onError, filters = {} }) {
-  // Cancelar suscripción anterior si existe
+function subscribeRemitos({ ctx, filters = {}, onData, onError }) {
   unsubscribeAll();
-
-  const col         = collection(db, APP.COLLECTION);
   const constraints = [orderBy("fecha", "desc")];
-
-  // Agregar filtros de fecha si existen
-  // Nota: filtrar por el mismo campo sobre el que se ordena
-  // NO requiere índice compuesto en Firestore.
-  if (filters.from) {
-    const fromDate = new Date(filters.from + "T00:00:00");
-    constraints.push(where("fecha", ">=", Timestamp.fromDate(fromDate)));
-  }
-  if (filters.to) {
-    const toDate = new Date(filters.to + "T23:59:59");
-    constraints.push(where("fecha", "<=", Timestamp.fromDate(toDate)));
-  }
-
-  const q = query(col, ...constraints);
+  if (filters.from) constraints.push(where("fecha", ">=", Timestamp.fromDate(new Date(filters.from + "T00:00:00"))));
+  if (filters.to)   constraints.push(where("fecha", "<=", Timestamp.fromDate(new Date(filters.to   + "T23:59:59"))));
 
   activeUnsubscribe = onSnapshot(
-    q,
-    (snapshot) => {
-      const remitos = snapshot.docs.map((d) => normalizeRemito(d));
-      onData(remitos);
-    },
-    onError
+    query(getRemitosRef(ctx), ...constraints),
+    (snap) => onData(snap.docs.map(normalizeRemito)),
+    onError,
   );
 }
 
-// ── CRUD ───────────────────────────────────────────────
-
-/**
- * Agrega un nuevo remito.
- * @param {RemitoData} data
- */
-async function addRemito(data) {
-  return addDoc(collection(db, APP.COLLECTION), {
-    ...sanitizeRemito(data),
-    creadoEn: serverTimestamp(),
-  });
+// ── CRUD ────────────────────────────────────────────────
+async function addRemito(data, ctx) {
+  return addDoc(getRemitosRef(ctx), { ...sanitizeRemito(data), creadoEn: serverTimestamp() });
 }
 
-/**
- * Actualiza un remito existente.
- * @param {string} id
- * @param {RemitoData} data
- */
-async function updateRemito(id, data) {
-  return updateDoc(doc(db, APP.COLLECTION, id), {
-    ...sanitizeRemito(data),
-    actualizadoEn: serverTimestamp(),
-  });
+async function updateRemito(id, data, ctx) {
+  return updateDoc(getDocRef(ctx, id), { ...sanitizeRemito(data), actualizadoEn: serverTimestamp() });
 }
 
-/**
- * Elimina un remito por ID.
- * @param {string} id
- */
-async function deleteRemito(id) {
-  return deleteDoc(doc(db, APP.COLLECTION, id));
+async function deleteRemito(id, ctx) {
+  return deleteDoc(getDocRef(ctx, id));
 }
 
-/** Cancela la suscripción activa */
 function unsubscribeAll() {
-  if (activeUnsubscribe) {
-    activeUnsubscribe();
-    activeUnsubscribe = null;
-  }
+  if (activeUnsubscribe) { activeUnsubscribe(); activeUnsubscribe = null; }
 }
 
-// ── Helpers internos ───────────────────────────────────
+// ── Grupos ───────────────────────────────────────────────
+function subscribeUserGroups(email, { onData, onError }) {
+  if (groupsUnsubscribe) { groupsUnsubscribe(); groupsUnsubscribe = null; }
+  const q = query(collection(db, "groups"), where("memberEmails", "array-contains", email));
+  groupsUnsubscribe = onSnapshot(q,
+    (snap) => onData(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
+    onError,
+  );
+}
 
-/**
- * Convierte un DocumentSnapshot de Firestore a un objeto plano
- * con `fecha` como objeto Date de JS.
- */
-function normalizeRemito(docSnapshot) {
-  const data = docSnapshot.data();
+async function createGroup({ name, creatorUid, creatorEmail, creatorAlias }) {
+  return addDoc(collection(db, "groups"), {
+    name: name.trim(),
+    createdBy: creatorUid,
+    members: [{ uid: creatorUid, email: creatorEmail, alias: creatorAlias || "", joinedAt: new Date().toISOString() }],
+    memberEmails: [creatorEmail],
+    createdAt: serverTimestamp(),
+  });
+}
+
+async function inviteMember(groupId, email) {
+  return updateDoc(doc(db, "groups", groupId), {
+    memberEmails: arrayUnion(email),
+    members: arrayUnion({ email, alias: "", uid: "", joinedAt: new Date().toISOString() }),
+  });
+}
+
+async function removeMember(groupId, email) {
+  const snap = await getDoc(doc(db, "groups", groupId));
+  if (!snap.exists()) return;
+  const members = (snap.data().members || []).filter((m) => m.email !== email);
+  return updateDoc(doc(db, "groups", groupId), { memberEmails: arrayRemove(email), members });
+}
+
+// ── Perfil de usuario / Alias ────────────────────────────
+async function saveUserProfile(uid, { alias, email, displayName }) {
+  const data = { email, displayName: displayName || "", updatedAt: serverTimestamp() };
+  if (alias !== undefined) data.alias = alias.toLowerCase().trim();
+  await setDoc(doc(db, "users", uid), data, { merge: true });
+  if (alias) await setDoc(doc(db, "userAliases", alias.toLowerCase().trim()), { uid, email });
+}
+
+async function getUserProfile(uid) {
+  const snap = await getDoc(doc(db, "users", uid));
+  return snap.exists() ? snap.data() : null;
+}
+
+async function resolveInvite(emailOrAlias) {
+  if (emailOrAlias.includes("@")) return emailOrAlias;
+  const snap = await getDoc(doc(db, "userAliases", emailOrAlias.toLowerCase().trim()));
+  return snap.exists() ? snap.data().email : null;
+}
+
+function unsubscribeGroups() {
+  if (groupsUnsubscribe) { groupsUnsubscribe(); groupsUnsubscribe = null; }
+}
+
+// ── Normalización y sanitización ─────────────────────────
+function normalizeRemito(d) {
+  const data = d.data();
   return {
-    id:             docSnapshot.id,
+    id: d.id,
     numeroRemito:   data.numeroRemito   ?? "",
     chofer:         data.chofer         ?? "",
     desde:          data.desde          ?? "",
     hasta:          data.hasta          ?? "",
     cantidadLitros: data.cantidadLitros ?? 0,
-    // Normalizar fecha: puede ser Timestamp de Firestore o Date
-    fecha: data.fecha?.toDate
-      ? data.fecha.toDate()
-      : new Date(data.fecha ?? Date.now()),
+    fecha: data.fecha?.toDate ? data.fecha.toDate() : new Date(data.fecha ?? Date.now()),
   };
 }
 
-/**
- * Limpia y tipifica los datos antes de escribirlos en Firestore.
- * @param {RemitoData} data
- */
 function sanitizeRemito(data) {
-  // Convertir la fecha a Timestamp de Firestore
   let fechaTimestamp;
-  if (data.fecha instanceof Date) {
-    fechaTimestamp = Timestamp.fromDate(data.fecha);
-  } else if (typeof data.fecha === "string") {
-    // "YYYY-MM-DD" → asumir mediodia local para evitar desfases de timezone
-    fechaTimestamp = Timestamp.fromDate(new Date(data.fecha + "T12:00:00"));
-  } else {
-    fechaTimestamp = Timestamp.now();
-  }
-
+  if (data.fecha instanceof Date)      fechaTimestamp = Timestamp.fromDate(data.fecha);
+  else if (typeof data.fecha === "string") fechaTimestamp = Timestamp.fromDate(new Date(data.fecha + "T12:00:00"));
+  else                                 fechaTimestamp = Timestamp.now();
   return {
     numeroRemito:   String(data.numeroRemito   ?? "").trim(),
     chofer:         String(data.chofer         ?? "").trim(),
@@ -174,13 +154,3 @@ function sanitizeRemito(data) {
     fecha:          fechaTimestamp,
   };
 }
-
-/**
- * @typedef {object} RemitoData
- * @property {string}        numeroRemito
- * @property {string}        chofer
- * @property {string}        desde
- * @property {string}        hasta
- * @property {number|string} cantidadLitros
- * @property {Date|string}   fecha
- */
