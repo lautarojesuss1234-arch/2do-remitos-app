@@ -28,9 +28,24 @@ const fmtNum  = new Intl.NumberFormat(APP.DATE_LOCALE,  { minimumFractionDigits:
 export function initUI({ Auth, DB }) {
   _Auth = Auth; _DB = DB;
   if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc =
-    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    "https://cdnjs.cloudflare.com/ajax/libs/cloudflare-ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+  // Auth observer: Ahora está adentro para asegurar que _Auth ya esté cargado
+  _Auth.onAuthChanged(async (user) => {
+    if (user) {
+      _ctx = { type: "personal", uid: user.uid };
+      showApp(user);
+      await loadUserProfile(user);
+      startGroupsListener(user.email);
+      startDataListener();
+    } else {
+      showLogin();
+    }
+  });
+
   return { mount };
 }
+
 function mount() {
   // Auth
   $("#btn-google-login").addEventListener("click", handleLogin);
@@ -88,25 +103,13 @@ document.addEventListener("click", (e) => {
   const t = e.target.closest("[data-close]");
   if (t) closeModal(t.dataset.close);
 });
-  // Auth observer
-  _Auth.onAuthChanged(async (user) => {
-    if (user) {
-      _ctx = { type: "personal", uid: user.uid };
-      showApp(user);
-      await loadUserProfile(user);
-      startGroupsListener(user.email);
-      startDataListener();
-    } else {
-      showLogin();
-    }
-  });
 
 // ═══════════════════════════════════════════════════════════
 //  AUTH
 // ═══════════════════════════════════════════════════════════
 async function handleLogin() {
-  const btn = $("btn-google-login");
-  const err = $("login-error");
+  const btn = $("#btn-google-login");
+  const err = ge("login-error");
   err.textContent = "";
   btn.disabled = true;
   btn.textContent = "Conectando…";
@@ -128,7 +131,7 @@ async function handleLogout() {
 function showApp(user) {
   ge("login-screen").classList.add("hidden");
   ge("app-screen").classList.remove("hidden");
-  const avatar = $("user-avatar");
+  const avatar = ge("user-avatar");
   avatar.src = user.photoURL ?? "";
   avatar.style.display = user.photoURL ? "block" : "none";
   setText("user-name", user.displayName?.split(" ")[0] ?? user.email ?? "");
@@ -210,7 +213,7 @@ function currentContextName() {
 function toggleAdvancedFilters() {
   const panel = ge("advanced-filters");
   panel.classList.toggle("hidden");
-  $("btn-toggle-advanced").textContent = panel.classList.contains("hidden") ? "⚙ Más filtros" : "⚙ Ocultar filtros";
+  $("#btn-toggle-advanced").textContent = panel.classList.contains("hidden") ? "⚙ Más filtros" : "⚙ Ocultar filtros";
 }
 
 function populateFilterDropdowns(remitos) {
@@ -444,7 +447,7 @@ async function handleCreateGroup() {
   const name = ge("field-group-name").value.trim();
   if (!name) { showToast("Poné un nombre para el grupo.", "info"); return; }
 
-  const btn = $("btn-save-group");
+  const btn = $("#btn-save-group");
   btn.disabled = true; btn.textContent = "Creando…";
   try {
     const user    = _Auth.currentUser();
@@ -470,7 +473,7 @@ async function handleInviteMember() {
   const input = ge("field-invite").value.trim();
   if (!input) { showToast("Ingresá un email o alias.", "info"); return; }
 
-  const btn = $("btn-save-invite");
+  const btn = $("#btn-save-invite");
   btn.disabled = true; btn.textContent = "Invitando…";
   try {
     const email = await _DB.resolveInvite(input);
@@ -530,7 +533,7 @@ function openRemitoModal(remito = null) {
 }
 
 async function handleSaveRemito() {
-  const btn   = $("btn-save");
+  const btn   = $("#btn-save");
   const errEl = ge("form-error");
   errEl.textContent = "";
 
@@ -584,7 +587,7 @@ function openDeleteModal(id, numero) {
 
 async function handleConfirmDelete() {
   if (!_deletingId) return;
-  const btn = $("btn-confirm-delete");
+  const btn = $("#btn-confirm-delete");
   btn.disabled = true; btn.textContent = "Eliminando…";
   try {
     await _DB.deleteRemito(_deletingId, _ctx);
@@ -668,7 +671,7 @@ function handleScanImageSelected(e) {
     _scanImageB64 = ev.target.result;
     preview.src   = _scanImageB64;
     preview.classList.remove("hidden");
-    $("btn-analyze").disabled = false;
+    $("#btn-analyze").disabled = false;
   };
   reader.readAsDataURL(file);
 }
@@ -680,7 +683,7 @@ async function handleAnalyze() {
   toggleEl("ai-key-warning", false);
 
   const statusEl   = ge("scan-status");
-  const analyzeBtn = $("btn-analyze");
+  const analyzeBtn = $("#btn-analyze");
   const errEl      = ge("scan-error");
   errEl.textContent = "";
   ge("scan-result-msg").classList.add("hidden");
@@ -1034,7 +1037,7 @@ function resetScanModal() {
   ge("scan-result-msg").classList.add("hidden");
   ge("scan-error").textContent  = "";
   ge("ai-key-warning").classList.add("hidden");
-  $("btn-analyze").disabled     = true;
+  $("#btn-analyze").disabled     = true;
   ge("scan-camera").value        = "";
   ge("scan-gallery-input").value = "";
 }
@@ -1058,7 +1061,7 @@ export function showToast(message, type = "info", duration = 3500) {
 //  UTILIDADES
 // ═══════════════════════════════════════════════════════════
 const ge  = (id)  => document.getElementById(id);
-const $   = (sel) => document.querySelector(sel);
+const $   = (sel) => document.querySelector(sel.startsWith("#") || sel.startsWith(".") || sel.startsWith("[") ? sel : `#${sel}`);
 const esc = (s)   => String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 const todayISO = () => new Date().toISOString().slice(0, 10);
 function setText(id, val)       { const el = ge(id); if (el) el.textContent = val; }
