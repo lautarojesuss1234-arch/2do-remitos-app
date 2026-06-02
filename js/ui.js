@@ -83,7 +83,7 @@ function mount() {
   $("#btn-save-settings").addEventListener("click", handleSaveSettings);
   $("#field-ai-provider").addEventListener("change", (e) => updateSettingsHint(e.target.value));
 }
-
+}
   // Cerrar modales
   document.addEventListener("click", (e) => {
     const t = e.target.closest("[data-close]");
