@@ -34,9 +34,9 @@ export function initUI({ Auth, DB }) {
 
 function mount() {
   // Auth
-  $("btn-google-login").addEventListener("click", handleLogin);
-  $("btn-logout").addEventListener("click", handleLogout);
-  $("btn-settings").addEventListener("click", openSettings);
+  $("#btn-google-login").addEventListener("click", handleLogin);
+  $("#btn-logout").addEventListener("click", handleLogout);
+  $("#btn-settings").addEventListener("click", openSettings);
 
   // Tabs
   document.querySelectorAll(".tab-btn").forEach((btn) =>
@@ -44,44 +44,45 @@ function mount() {
   );
 
   // Remitos CRUD
-  $("btn-new").addEventListener("click",       () => openRemitoModal(null));
-  $("btn-new-empty").addEventListener("click", () => openRemitoModal(null));
-  $("btn-save").addEventListener("click",      handleSaveRemito);
-  $("btn-confirm-delete").addEventListener("click", handleConfirmDelete);
+  $("#btn-new").addEventListener("click",       () => openRemitoModal(null));
+  $("#btn-new-empty").addEventListener("click", () => openRemitoModal(null));
+  $("#btn-save").addEventListener("click",      handleSaveRemito);
+  $("#btn-confirm-delete").addEventListener("click", handleConfirmDelete);
 
   // Scan / Galería
-  $("btn-scan").addEventListener("click",    () => openScanModal("camera"));
-  $("btn-gallery").addEventListener("click", () => openScanModal("gallery"));
-  $("scan-camera").addEventListener("change",        handleScanImageSelected);
-  $("scan-gallery-input").addEventListener("change", handleScanImageSelected);
-  $("btn-analyze").addEventListener("click", handleAnalyze);
+  $("#btn-scan").addEventListener("click",    () => openScanModal("camera"));
+  $("#btn-gallery").addEventListener("click", () => openScanModal("gallery"));
+  $("#scan-camera").addEventListener("change",        handleScanImageSelected);
+  $("#scan-gallery-input").addEventListener("change", handleScanImageSelected);
+  $("#btn-analyze").addEventListener("click", handleAnalyze);
 
   // Filtros
-  $("btn-toggle-advanced").addEventListener("click", toggleAdvancedFilters);
-  $("btn-apply-filters").addEventListener("click",   applyFilters);
-  $("btn-clear-filters").addEventListener("click",   clearFilters);
+  $("#btn-toggle-advanced").addEventListener("click", toggleAdvancedFilters);
+  $("#btn-apply-filters").addEventListener("click",   applyFilters);
+  $("#btn-clear-filters").addEventListener("click",   clearFilters);
 
   // Exportar
-  $("btn-export-pdf").addEventListener("click",   () => exportToPDF(_remitos, currentContextName()));
-  $("btn-export-excel").addEventListener("click", () => exportToExcel(_remitos, currentContextName()));
+  $("#btn-export-pdf").addEventListener("click",   () => exportToPDF(_remitos, currentContextName()));
+  $("#btn-export-excel").addEventListener("click", () => exportToExcel(_remitos, currentContextName()));
 
   // Importar
-  $("btn-import-excel").addEventListener("click",  () => $("import-file-excel").click());
-  $("btn-import-pdf").addEventListener("click",    () => $("import-file-pdf").click());
-  $("import-file-excel").addEventListener("change", handleImportExcel);
-  $("import-file-pdf").addEventListener("change",   handleImportPDF);
+  $("#btn-import-excel").addEventListener("click",  () => $("#import-file-excel").click());
+  $("#btn-import-pdf").addEventListener("click",    () => $("#import-file-pdf").click());
+  $("#import-file-excel").addEventListener("change", handleImportExcel);
+  $("#import-file-pdf").addEventListener("change",   handleImportPDF);
 
   // Grupos
-  $("btn-create-group").addEventListener("click",  () => openModal("modal-create-group"));
-  $("btn-save-group").addEventListener("click",    handleCreateGroup);
-  $("btn-back-group").addEventListener("click",    backToGroupList);
-  $("btn-invite-member").addEventListener("click", () => openModal("modal-invite"));
-  $("btn-save-invite").addEventListener("click",   handleInviteMember);
-  $("btn-view-members").addEventListener("click",  openMembersModal);
+  $("#btn-create-group").addEventListener("click",  () => openModal("modal-create-group"));
+  $("#btn-save-group").addEventListener("click",    handleCreateGroup);
+  $("#btn-back-group").addEventListener("click",    backToGroupList);
+  $("#btn-invite-member").addEventListener("click", () => openModal("modal-invite"));
+  $("#btn-save-invite").addEventListener("click",   handleInviteMember);
+  $("#btn-view-members").addEventListener("click",  openMembersModal);
 
   // Configuración
-  $("btn-save-settings").addEventListener("click", handleSaveSettings);
-  $("field-ai-provider").addEventListener("change", (e) => updateSettingsHint(e.target.value));
+  $("#btn-save-settings").addEventListener("click", handleSaveSettings);
+  $("#field-ai-provider").addEventListener("change", (e) => updateSettingsHint(e.target.value));
+}
 
   // Cerrar modales
   document.addEventListener("click", (e) => {
