@@ -1065,5 +1065,3 @@ const esc = (s)   => String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").
 const todayISO = () => new Date().toISOString().slice(0, 10);
 function setText(id, val)       { const el = ge(id); if (el) el.textContent = val; }
 function toggleEl(id, show)     { const el = ge(id); if (el) el.classList.toggle("hidden", !show); }
-JSEOF
-echo "ui.js OK"
