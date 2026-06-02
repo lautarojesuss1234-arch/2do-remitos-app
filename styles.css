@@ -625,7 +625,7 @@ input  { font-family: inherit; }
   font-size: 1rem;
   transition: background .15s, color .15s;
 }
-.modal-close:hover { background: var(--color-surface-2); color: var(--color-text); }
+.modal-close:hover { background: var(--surface-2); color: var(--color-text); }
 
 .modal-body {
   padding: 1.25rem;
@@ -844,3 +844,139 @@ input  { font-family: inherit; }
   .toolbar-filters  { flex: 1; }
   .toolbar-export   { flex: none; }
 }
+
+/* ══════════════════════════════════════════════════════════
+   GESTIÓN DE GRUPOS Y ALIAS (Actualización)
+══════════════════════════════════════════════════════════ */
+
+/* Selector o selector-badge de Grupo Activo en el Toolbar */
+.group-selector-container {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-2);
+  border-radius: var(--radius-sm);
+  padding: .35rem .7rem;
+}
+
+.group-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .2rem .6rem;
+  background: var(--color-secondary-t);
+  border: 1px solid var(--color-secondary);
+  border-radius: 4px;
+  font-size: .78rem;
+  color: var(--color-secondary);
+  font-weight: 600;
+}
+
+/* Listas de grupos y miembros dentro de los modales */
+.group-list, .member-list {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  list-style: none;
+  margin-top: .25rem;
+}
+
+.group-item, .member-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  padding: .65rem .85rem;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-2);
+  border-radius: var(--radius-sm);
+  transition: border-color .15s;
+}
+
+.group-item:hover, .member-item:hover {
+  border-color: var(--color-text-3);
+}
+
+.group-info, .member-info {
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+  min-width: 0; /* previene desbordes en texto largo */
+}
+
+.group-name, .member-name {
+  font-size: .9rem;
+  font-weight: 600;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.group-meta, .member-email {
+  font-size: .78rem;
+  color: var(--color-text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Badge para identificar roles (Creador, Admin, etc.) */
+.role-badge {
+  display: inline-block;
+  padding: .15rem .4rem;
+  background: var(--color-primary-t);
+  border: 1px solid var(--color-primary);
+  border-radius: 4px;
+  font-size: .7rem;
+  color: var(--color-primary);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* Sección interactiva para agregar miembros (input inline + botón) */
+.inline-form {
+  display: flex;
+  gap: .5rem;
+  width: 100%;
+}
+
+.inline-form .input {
+  flex: 1;
+}
+
+/* Caja contenedora para la zona de alias del usuario */
+.alias-card {
+  padding: 1rem;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-2);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+}
+
+.alias-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: .5rem;
+}
+
+.alias-title {
+  font-family: var(--font-brand);
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  color: var(--color-primary);
+}
+
+/* Ajustes adaptativos para los nuevos componentes en pantallas de escritorio */
+@media (min-width: 600px) {
+  .inline-form {
+    max-width: 100%;
+  }
+}
+
