@@ -2,413 +2,495 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <title>RemitosApp</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚛</text></svg>" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0d0f18" />
+  <title>Remitos — Gestión de Transporte</title>
+
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- App styles -->
   <link rel="stylesheet" href="styles.css" />
+
+  <!-- jsPDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+  <!-- SheetJS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <!-- PDF.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 <body>
 
-<!-- ═══ LOGIN ═══ -->
+<!-- ══════════════════════════════════════════════════════════════
+     LOGIN SCREEN
+══════════════════════════════════════════════════════════════ -->
 <div id="login-screen" class="screen">
   <div class="login-card">
-    <div class="login-brand">
-      <span class="brand-icon">🚛</span>
-      <h1 class="brand-name">Remitos</h1>
-      <p class="brand-sub">Sistema de gestión de transporte</p>
-    </div>
-    <button id="btn-google-login" class="btn btn-google">
-      <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 2.9l5.7-5.7C34.5 6.5 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.9z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 16.1 19 13 24 13c3.1 0 5.8 1.1 8 2.9l5.7-5.7C34.5 6.5 29.6 4 24 4 16.3 4 9.7 8.4 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.3 35.3 26.8 36 24 36c-5.2 0-9.6-3.3-11.3-8H6.3C9.6 35.5 16.3 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.3 4.1-4.2 5.4l.1.1 6.2 5.2C37.1 38 44 33 44 24c0-1.3-.1-2.7-.4-3.9z"/></svg>
+    <div class="brand-icon">🚛</div>
+    <div class="brand-name">Remitos</div>
+    <p class="brand-sub">Gestión de transporte de líquidos a granel</p>
+    <button id="btn-google-login" class="btn-google" type="button">
+      <svg class="btn-google-icon" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.36-8.16 2.36-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+      </svg>
       Continuar con Google
     </button>
-    <p id="login-error" class="error-msg" aria-live="polite"></p>
+    <p id="login-error" class="login-error"></p>
   </div>
 </div>
 
-<!-- ═══ APP PRINCIPAL ═══ -->
+<!-- ══════════════════════════════════════════════════════════════
+     APP SCREEN
+══════════════════════════════════════════════════════════════ -->
 <div id="app-screen" class="screen hidden">
 
+  <!-- Header -->
   <header class="app-header">
-    <div class="header-brand"><span>🚛</span><span class="brand-name-sm">Remitos</span></div>
+    <div class="header-brand">
+      <span class="brand-truck">🚛</span>
+      <span class="brand-name-sm">Remitos</span>
+    </div>
     <div class="header-actions">
-      <button id="btn-settings" class="btn-icon" title="Configuración" aria-label="Configuración">⚙️</button>
+      <button id="btn-settings" class="btn-icon" title="Configuración">⚙️</button>
       <div class="user-chip">
-        <img id="user-avatar" src="" alt="" class="user-avatar" />
+        <img id="user-avatar" class="user-avatar" src="" alt="" />
         <span id="user-name" class="user-name-text"></span>
       </div>
-      <button id="btn-logout" class="btn btn-ghost btn-sm">Salir</button>
+      <button id="btn-logout" class="btn-logout">Salir</button>
     </div>
   </header>
 
-  <!-- Tabs principales -->
-  <nav class="tab-nav" aria-label="Secciones">
+  <!-- Tab Nav -->
+  <nav class="tab-nav">
     <button class="tab-btn active" data-tab="personal">📋 Personal</button>
     <button class="tab-btn"        data-tab="grupos">👥 Grupos</button>
     <button class="tab-btn"        data-tab="dashboard">📊 Dashboard</button>
   </nav>
 
+  <!-- Main content -->
   <main class="app-main">
 
-    <!-- ══════════ TAB: PERSONAL ══════════ -->
+    <!-- ── TAB: PERSONAL ──────────────────────────────────────── -->
     <div id="tab-personal" class="tab-panel">
 
-      <section class="toolbar" aria-label="Acciones">
+      <!-- Toolbar -->
+      <div class="toolbar">
         <div class="toolbar-primary">
-          <button id="btn-new"     class="btn btn-primary">＋ Nuevo</button>
-          <button id="btn-scan"    class="btn btn-secondary">📷 Cámara</button>
-          <button id="btn-gallery" class="btn btn-secondary">🖼️ Galería</button>
+          <button id="btn-new"     class="btn btn-primary btn-sm">＋ Nuevo</button>
+          <button id="btn-scan"    class="btn btn-secondary btn-sm">📷 Cámara</button>
+          <button id="btn-gallery" class="btn btn-secondary btn-sm">🖼️ Galería</button>
         </div>
 
         <div class="toolbar-filters">
-          <div class="filter-group">
-            <label class="filter-label" for="filter-from">Desde</label>
-            <input type="date" id="filter-from" class="input input-sm" />
-          </div>
-          <div class="filter-group">
-            <label class="filter-label" for="filter-to">Hasta</label>
-            <input type="date" id="filter-to" class="input input-sm" />
-          </div>
-          <button id="btn-toggle-advanced" class="btn btn-outline btn-sm">⚙ Más filtros</button>
+          <span class="filter-label">Desde</span>
+          <input id="filter-from" type="date" class="input-date-sm" />
+          <span class="filter-label">Hasta</span>
+          <input id="filter-to"   type="date" class="input-date-sm" />
+          <button id="btn-toggle-advanced" class="btn btn-ghost btn-sm">🔍 Filtros avanzados</button>
         </div>
 
-        <!-- Filtros avanzados -->
         <div id="advanced-filters" class="advanced-filters hidden">
           <div class="adv-filter-grid">
-            <div class="filter-group">
-              <label class="filter-label" for="filter-chofer">Chofer</label>
-              <select id="filter-chofer" class="input input-sm"><option value="">Todos</option></select>
+            <div class="form-group">
+              <label class="form-label">Chofer</label>
+              <select id="filter-chofer"><option value="">Todos</option></select>
             </div>
-            <div class="filter-group">
-              <label class="filter-label" for="filter-origen">Origen</label>
-              <select id="filter-origen" class="input input-sm"><option value="">Todos</option></select>
+            <div class="form-group">
+              <label class="form-label">Origen</label>
+              <select id="filter-origen"><option value="">Todos</option></select>
             </div>
-            <div class="filter-group">
-              <label class="filter-label" for="filter-destino">Destino</label>
-              <select id="filter-destino" class="input input-sm"><option value="">Todos</option></select>
+            <div class="form-group">
+              <label class="form-label">Destino</label>
+              <select id="filter-destino"><option value="">Todos</option></select>
             </div>
           </div>
           <div class="adv-filter-actions">
-            <button id="btn-apply-filters" class="btn btn-primary btn-sm">Aplicar filtros</button>
-            <button id="btn-clear-filters" class="btn btn-ghost btn-sm">✕ Limpiar</button>
+            <button id="btn-clear-filters"  class="btn btn-ghost  btn-sm">✕ Limpiar</button>
+            <button id="btn-apply-filters"  class="btn btn-primary btn-sm">Aplicar filtros</button>
           </div>
         </div>
 
         <div class="toolbar-export">
-          <span class="export-label">Exportar:</span>
-          <button id="btn-export-pdf"   class="btn btn-outline btn-xs">PDF</button>
-          <button id="btn-export-excel" class="btn btn-outline btn-xs">Excel</button>
-          <span class="export-divider">|</span>
-          <span class="export-label">Importar:</span>
-          <button id="btn-import-excel" class="btn btn-ghost btn-xs">Excel/CSV</button>
-          <button id="btn-import-pdf"   class="btn btn-ghost btn-xs">PDF</button>
-          <input type="file" id="import-file-excel" accept=".xlsx,.xls,.csv" class="visually-hidden" />
-          <input type="file" id="import-file-pdf"   accept=".pdf"            class="visually-hidden" />
+          <span class="export-label">Exportar</span>
+          <button id="btn-export-pdf"   class="btn btn-outline btn-sm">📄 PDF</button>
+          <button id="btn-export-excel" class="btn btn-outline btn-sm">📊 Excel</button>
+          <div class="export-divider"></div>
+          <span class="export-label">Importar</span>
+          <button id="btn-import-excel" class="btn btn-outline btn-sm">📥 Excel/CSV</button>
+          <button id="btn-import-pdf"   class="btn btn-outline btn-sm">📥 PDF</button>
+          <input id="import-file-excel" type="file" accept=".xlsx,.xls,.csv" class="hidden" />
+          <input id="import-file-pdf"   type="file" accept=".pdf"            class="hidden" />
         </div>
-      </section>
+      </div>
 
-      <div class="stats-bar" id="stats-bar" aria-live="polite">
+      <!-- Stats Bar -->
+      <div class="stats-bar" id="stats-bar">
         <div class="stat-item">
           <span class="stat-label">Remitos</span>
-          <span id="stat-count" class="stat-value">—</span>
+          <span class="stat-value" id="stat-count">0</span>
         </div>
         <div class="stat-divider"></div>
         <div class="stat-item">
-          <span class="stat-label">Total Litros</span>
-          <span id="stat-litros" class="stat-value">—</span>
+          <span class="stat-label">Total litros</span>
+          <span class="stat-value" id="stat-litros">0 L</span>
         </div>
-        <div id="filter-badge" class="filter-badge hidden">Filtrado</div>
+        <span class="filter-badge hidden" id="filter-badge">Filtrado</span>
       </div>
 
+      <!-- Table container -->
       <div class="table-container">
-        <div id="loading-state" class="state-view"><div class="spinner"></div><span>Cargando…</span></div>
-        <div id="empty-state"   class="state-view hidden">
-          <span class="state-icon">📄</span><p>No hay remitos registrados.</p>
-          <button class="btn btn-primary" id="btn-new-empty">+ Crear el primero</button>
+        <!-- Loading -->
+        <div id="loading-state" class="state-view">
+          <div class="spinner"></div>
+          <p>Cargando remitos…</p>
         </div>
+
+        <!-- Empty -->
+        <div id="empty-state" class="state-view hidden">
+          <div class="state-icon">📋</div>
+          <p>No hay remitos todavía.<br>Creá el primero o importá desde Excel.</p>
+          <button id="btn-new-empty" class="btn btn-primary btn-sm">＋ Nuevo remito</button>
+        </div>
+
+        <!-- Table -->
         <div id="table-wrapper" class="hidden">
-          <table class="remitos-table" id="remitos-table" aria-label="Listado de remitos">
-            <thead><tr>
-              <th>N° Remito</th><th>Fecha</th><th>Chofer</th>
-              <th>Desde</th><th>Hasta</th>
-              <th class="col-num">Litros</th><th class="col-actions">Acciones</th>
-            </tr></thead>
+          <table class="remitos-table">
+            <thead>
+              <tr>
+                <th>N° Remito</th>
+                <th>Fecha</th>
+                <th>Chofer</th>
+                <th>Origen</th>
+                <th>Destino</th>
+                <th style="text-align:right">Litros</th>
+                <th></th>
+              </tr>
+            </thead>
             <tbody id="remitos-body"></tbody>
           </table>
         </div>
       </div>
+
     </div><!-- /tab-personal -->
 
-    <!-- ══════════ TAB: GRUPOS ══════════ -->
+    <!-- ── TAB: GRUPOS ────────────────────────────────────────── -->
     <div id="tab-grupos" class="tab-panel hidden">
 
-      <!-- Vista: Lista de grupos -->
+      <!-- List view -->
       <div id="group-list-view">
         <div class="groups-header">
-          <h2 class="groups-title">Mis Grupos</h2>
-          <button id="btn-create-group" class="btn btn-primary btn-sm">＋ Crear grupo</button>
+          <span class="groups-title">Mis Grupos</span>
+          <button id="btn-create-group" class="btn btn-primary btn-sm">＋ Nuevo grupo</button>
         </div>
-        <div id="group-list" class="group-list"></div>
+        <div id="group-list">
+          <div class="state-view">
+            <div class="spinner spinner-sm" style="margin:0 auto .5rem"></div>
+            <p>Cargando grupos…</p>
+          </div>
+        </div>
       </div>
 
-      <!-- Vista: Detalle de un grupo (se muestra al entrar a un grupo) -->
+      <!-- Detail view (hidden by default) -->
       <div id="group-detail-view" class="hidden">
         <div class="group-detail-header">
           <button id="btn-back-group" class="btn btn-ghost btn-sm">← Volver</button>
-          <h2 id="group-detail-name" class="group-detail-title">Grupo</h2>
+          <span id="group-detail-name" class="group-detail-title"></span>
           <div class="group-detail-actions">
             <button id="btn-invite-member" class="btn btn-secondary btn-sm">＋ Invitar</button>
-            <button id="btn-view-members"  class="btn btn-outline btn-sm">👥 Miembros</button>
+            <button id="btn-view-members"  class="btn btn-outline  btn-sm">👥 Miembros</button>
           </div>
         </div>
 
-        <!-- Misma toolbar/tabla que personal, reutilizada -->
-        <div class="stats-bar" aria-live="polite">
-          <div class="stat-item"><span class="stat-label">Remitos</span><span id="stat-count" class="stat-value">—</span></div>
-          <div class="stat-divider"></div>
-          <div class="stat-item"><span class="stat-label">Total Litros</span><span id="stat-litros" class="stat-value">—</span></div>
-          <div id="filter-badge" class="filter-badge hidden">Filtrado</div>
-        </div>
-
-        <div class="table-container">
-          <div id="loading-state" class="state-view"><div class="spinner"></div><span>Cargando…</span></div>
-          <div id="empty-state"   class="state-view hidden">
-            <span class="state-icon">📄</span><p>Este grupo no tiene remitos todavía.</p>
-            <button class="btn btn-primary" id="btn-new-empty">+ Crear el primero</button>
-          </div>
-          <div id="table-wrapper" class="hidden">
-            <table class="remitos-table" aria-label="Remitos del grupo">
-              <thead><tr>
-                <th>N° Remito</th><th>Fecha</th><th>Chofer</th>
-                <th>Desde</th><th>Hasta</th>
-                <th class="col-num">Litros</th><th class="col-actions">Acciones</th>
-              </tr></thead>
-              <tbody id="remitos-body"></tbody>
-            </table>
-          </div>
-        </div>
+        <!-- Group gets same toolbar + table as personal, reusing same element IDs -->
+        <!-- The context is switched via _ctx in ui.js so the same elements work -->
+        <p style="color:var(--color-text-3);font-size:.82rem;margin-bottom:.75rem">
+          Estás trabajando en modo grupo. Todos los miembros ven y editan los mismos remitos.
+        </p>
       </div>
 
     </div><!-- /tab-grupos -->
 
-    <!-- ══════════ TAB: DASHBOARD ══════════ -->
+    <!-- ── TAB: DASHBOARD ─────────────────────────────────────── -->
     <div id="tab-dashboard" class="tab-panel hidden">
+
       <div id="dashboard-empty" class="state-view hidden">
-        <span class="state-icon">📊</span><p>Cargá remitos para ver el dashboard.</p>
+        <div class="state-icon">📊</div>
+        <p>Agregá remitos para ver las métricas.</p>
       </div>
+
       <div id="dashboard-content">
+        <!-- Metric cards -->
         <div class="dash-cards">
-          <div class="dash-card"><div class="dash-card-label">Total Remitos</div><div id="dash-total-remitos" class="dash-card-value">—</div></div>
-          <div class="dash-card"><div class="dash-card-label">Total Litros</div><div id="dash-total-litros" class="dash-card-value">—</div></div>
-          <div class="dash-card"><div class="dash-card-label">Choferes</div><div id="dash-total-choferes" class="dash-card-value">—</div></div>
-          <div class="dash-card"><div class="dash-card-label">Bodegas origen</div><div id="dash-total-origenes" class="dash-card-value">—</div></div>
+          <div class="dash-card">
+            <div class="dash-card-label">Remitos</div>
+            <div class="dash-card-value" id="dash-total-remitos">—</div>
+          </div>
+          <div class="dash-card">
+            <div class="dash-card-label">Total litros</div>
+            <div class="dash-card-value" id="dash-total-litros">—</div>
+          </div>
+          <div class="dash-card">
+            <div class="dash-card-label">Choferes</div>
+            <div class="dash-card-value" id="dash-total-choferes">—</div>
+          </div>
+          <div class="dash-card">
+            <div class="dash-card-label">Orígenes</div>
+            <div class="dash-card-value" id="dash-total-origenes">—</div>
+          </div>
         </div>
-        <div class="dash-section"><h3 class="dash-section-title">🚗 Litros por Chofer</h3><div id="chart-choferes" class="chart-container"></div></div>
-        <div class="dash-section"><h3 class="dash-section-title">📤 Litros por Origen</h3><div id="chart-origenes" class="chart-container"></div></div>
-        <div class="dash-section"><h3 class="dash-section-title">📥 Litros por Destino</h3><div id="chart-destinos" class="chart-container"></div></div>
+
+        <!-- Charts -->
+        <div class="dash-section">
+          <div class="dash-section-title">🚗 Litros por Chofer</div>
+          <div id="chart-choferes" class="chart-container"></div>
+        </div>
+        <div class="dash-section">
+          <div class="dash-section-title">📦 Litros por Origen</div>
+          <div id="chart-origenes" class="chart-container"></div>
+        </div>
+        <div class="dash-section">
+          <div class="dash-section-title">🏁 Litros por Destino</div>
+          <div id="chart-destinos" class="chart-container"></div>
+        </div>
       </div>
+
     </div><!-- /tab-dashboard -->
 
-  </main>
+  </main><!-- /app-main -->
 </div><!-- /app-screen -->
 
-<!-- ═══ MODAL: NUEVO / EDITAR REMITO ═══ -->
-<div id="modal-remito" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-remito-title">
+<!-- ══════════════════════════════════════════════════════════════
+     MODALES
+══════════════════════════════════════════════════════════════ -->
+
+<!-- Modal: Crear / Editar Remito -->
+<div id="modal-remito" class="modal">
   <div class="modal-backdrop" data-close="modal-remito"></div>
   <div class="modal-panel">
     <div class="modal-header">
-      <h2 id="modal-remito-title" class="modal-title">Nuevo Remito</h2>
-      <button class="modal-close" data-close="modal-remito" aria-label="Cerrar">✕</button>
+      <span class="modal-title" id="modal-remito-title">Nuevo Remito</span>
+      <button class="modal-close" data-close="modal-remito" type="button">✕</button>
     </div>
     <div class="modal-body">
-      <div class="form-row">
+      <div class="form-row" style="grid-template-columns:1fr 1fr">
         <div class="form-group">
-          <label class="form-label" for="field-numero">N° de Remito</label>
-          <input type="text" id="field-numero" class="input" placeholder="Ej: 0001-00123" autocomplete="off" />
+          <label class="form-label" for="field-numero">N° Remito</label>
+          <input id="field-numero" type="text" placeholder="Ej: 0001-00123" />
         </div>
         <div class="form-group">
-          <label class="form-label" for="field-fecha">Fecha</label>
-          <input type="date" id="field-fecha" class="input" />
+          <label class="form-label" for="field-fecha">Fecha *</label>
+          <input id="field-fecha" type="date" />
         </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label" for="field-chofer">Nombre del Chofer</label>
-        <input type="text" id="field-chofer" class="input" placeholder="Nombre completo" />
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label" for="field-desde">Bodega Origen</label>
-          <input type="text" id="field-desde" class="input" placeholder="Desde" autocomplete="off" />
+          <label class="form-label" for="field-chofer">Chofer *</label>
+          <input id="field-chofer" type="text" placeholder="Nombre del conductor" />
+        </div>
+      </div>
+      <div class="form-row" style="grid-template-columns:1fr 1fr">
+        <div class="form-group">
+          <label class="form-label" for="field-desde">Origen *</label>
+          <input id="field-desde" type="text" placeholder="Bodega origen" />
         </div>
         <div class="form-group">
-          <label class="form-label" for="field-hasta">Bodega Destino</label>
-          <input type="text" id="field-hasta" class="input" placeholder="Hasta" autocomplete="off" />
+          <label class="form-label" for="field-hasta">Destino *</label>
+          <input id="field-hasta" type="text" placeholder="Bodega destino" />
         </div>
       </div>
-      <div class="form-group">
-        <label class="form-label" for="field-litros">Cantidad (Litros)</label>
-        <input type="number" id="field-litros" class="input" placeholder="0.00" min="0" step="0.01" inputmode="decimal" />
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="field-litros">Cantidad de litros *</label>
+          <input id="field-litros" type="number" step="0.5" min="0" placeholder="Ej: 33840" />
+        </div>
       </div>
-      <p id="form-error" class="error-msg" aria-live="polite"></p>
+      <p class="form-error" id="form-error"></p>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" data-close="modal-remito">Cancelar</button>
-      <button id="btn-save" class="btn btn-primary">Guardar</button>
+      <button class="btn btn-ghost btn-sm"   data-close="modal-remito" type="button">Cancelar</button>
+      <button class="btn btn-primary btn-sm" id="btn-save" type="button">Guardar</button>
     </div>
   </div>
 </div>
 
-<!-- ═══ MODAL: ESCANEAR ═══ -->
-<div id="modal-scan" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-scan-title">
+<!-- Modal: Escanear imagen con OCR -->
+<div id="modal-scan" class="modal">
   <div class="modal-backdrop" data-close="modal-scan"></div>
   <div class="modal-panel">
     <div class="modal-header">
-      <h2 id="modal-scan-title" class="modal-title">Escanear Remito</h2>
-      <button class="modal-close" data-close="modal-scan" aria-label="Cerrar">✕</button>
+      <span class="modal-title">Escanear Remito</span>
+      <button class="modal-close" data-close="modal-scan" type="button">✕</button>
     </div>
     <div class="modal-body">
+      <!-- Hidden file inputs -->
+      <input id="scan-camera"        type="file" accept="image/*" capture="environment" class="hidden" />
+      <input id="scan-gallery-input" type="file" accept="image/*"                       class="hidden" />
+
       <div class="scan-drop-area">
         <div class="scan-buttons-row">
-          <label for="scan-camera" class="btn btn-secondary scan-source-btn">📷 Cámara
-            <input type="file" id="scan-camera" accept="image/*" capture="environment" class="visually-hidden" />
-          </label>
-          <label for="scan-gallery-input" class="btn btn-outline scan-source-btn">🖼️ Galería
-            <input type="file" id="scan-gallery-input" accept="image/*" class="visually-hidden" />
-          </label>
+          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('scan-camera').click()" type="button">
+            📷 Cámara
+          </button>
+          <button class="btn btn-outline btn-sm"   onclick="document.getElementById('scan-gallery-input').click()" type="button">
+            🖼️ Galería
+          </button>
         </div>
-        <p class="scan-text-sub">La imagen se optimiza automáticamente antes de enviarse a la IA</p>
+        <p class="scan-text-sub">Tomá una foto del remito o seleccioná desde galería</p>
+        <img id="scan-preview" class="scan-preview hidden" alt="Vista previa" />
       </div>
-      <img id="scan-preview" class="scan-preview hidden" alt="Vista previa" />
-      <div id="scan-status" class="scan-status hidden"><div class="spinner spinner-sm"></div><span>Analizando con IA…</span></div>
-      <div id="scan-result-msg" class="scan-result hidden">✓ Datos extraídos. Revisá antes de guardar.</div>
-      <p id="scan-error" class="error-msg" aria-live="polite"></p>
-      <div id="ai-key-warning" class="info-box hidden"><strong>⚠️ Clave de IA no configurada.</strong><br/>Configurá en ⚙️ Configuración.</div>
+
+      <div id="scan-status" class="scan-status hidden"></div>
+      <p id="scan-result-msg" class="scan-result hidden"></p>
+      <p id="scan-error" class="error-msg hidden"></p>
+
+      <div id="ai-key-warning" class="info-box hidden">
+        ⚠️ No hay API Key configurada. Andá a ⚙️ Configuración para agregar tu clave de IA.
+      </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" data-close="modal-scan">Cancelar</button>
-      <button id="btn-analyze" class="btn btn-secondary" disabled>Analizar imagen</button>
+      <button class="btn btn-ghost  btn-sm" data-close="modal-scan" type="button">Cancelar</button>
+      <button class="btn btn-primary btn-sm" id="btn-analyze" disabled type="button">Analizar con IA</button>
     </div>
   </div>
 </div>
 
-<!-- ═══ MODAL: ELIMINAR ═══ -->
-<div id="modal-delete" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-delete-title">
+<!-- Modal: Confirmar eliminación -->
+<div id="modal-delete" class="modal modal-sm">
   <div class="modal-backdrop" data-close="modal-delete"></div>
-  <div class="modal-panel modal-sm">
-    <div class="modal-header"><h2 id="modal-delete-title" class="modal-title">Eliminar Remito</h2></div>
-    <div class="modal-body"><p>¿Eliminás el remito <strong id="delete-remito-num"></strong>? No se puede deshacer.</p></div>
+  <div class="modal-panel">
+    <div class="modal-header">
+      <span class="modal-title">Eliminar Remito</span>
+      <button class="modal-close" data-close="modal-delete" type="button">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--color-text-2)">
+        ¿Estás seguro que querés eliminar el remito <strong id="delete-remito-num" style="color:var(--color-primary)"></strong>?
+        Esta acción no se puede deshacer.
+      </p>
+    </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" data-close="modal-delete">Cancelar</button>
-      <button id="btn-confirm-delete" class="btn btn-danger">Eliminar</button>
+      <button class="btn btn-ghost  btn-sm" data-close="modal-delete" type="button">Cancelar</button>
+      <button class="btn btn-danger btn-sm" id="btn-confirm-delete" type="button">Eliminar</button>
     </div>
   </div>
 </div>
 
-<!-- ═══ MODAL: CREAR GRUPO ═══ -->
-<div id="modal-create-group" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-create-group-title">
+<!-- Modal: Crear grupo -->
+<div id="modal-create-group" class="modal modal-sm">
   <div class="modal-backdrop" data-close="modal-create-group"></div>
-  <div class="modal-panel modal-sm">
+  <div class="modal-panel">
     <div class="modal-header">
-      <h2 id="modal-create-group-title" class="modal-title">👥 Crear Grupo</h2>
-      <button class="modal-close" data-close="modal-create-group" aria-label="Cerrar">✕</button>
+      <span class="modal-title">Nuevo Grupo</span>
+      <button class="modal-close" data-close="modal-create-group" type="button">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-group">
-        <label class="form-label" for="field-group-name">Nombre del grupo</label>
-        <input type="text" id="field-group-name" class="input" placeholder="Ej: Transportes García" autocomplete="off" />
+        <label class="form-label" for="field-group-name">Nombre del grupo *</label>
+        <input id="field-group-name" type="text" placeholder="Ej: Transportes Norte" />
       </div>
-      <p class="form-hint">Vas a ser el primer miembro. Podés invitar a otros después.</p>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" data-close="modal-create-group">Cancelar</button>
-      <button id="btn-save-group" class="btn btn-primary">Crear grupo</button>
+      <button class="btn btn-ghost  btn-sm" data-close="modal-create-group" type="button">Cancelar</button>
+      <button class="btn btn-primary btn-sm" id="btn-save-group" type="button">Crear</button>
     </div>
   </div>
 </div>
 
-<!-- ═══ MODAL: INVITAR MIEMBRO ═══ -->
-<div id="modal-invite" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-invite-title">
+<!-- Modal: Invitar miembro -->
+<div id="modal-invite" class="modal modal-sm">
   <div class="modal-backdrop" data-close="modal-invite"></div>
-  <div class="modal-panel modal-sm">
+  <div class="modal-panel">
     <div class="modal-header">
-      <h2 id="modal-invite-title" class="modal-title">＋ Invitar al grupo</h2>
-      <button class="modal-close" data-close="modal-invite" aria-label="Cerrar">✕</button>
+      <span class="modal-title">Invitar Miembro</span>
+      <button class="modal-close" data-close="modal-invite" type="button">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-group">
-        <label class="form-label" for="field-invite">Email o alias</label>
-        <input type="text" id="field-invite" class="input" placeholder="usuario@gmail.com o @alias" autocomplete="off" />
-        <p class="form-hint">Si la persona configuró un alias en la app, podés usarlo directamente.</p>
+        <label class="form-label" for="field-invite">Email o alias *</label>
+        <input id="field-invite" type="text" placeholder="usuario@gmail.com o @alias" />
+        <p class="form-hint">El usuario debe haber iniciado sesión al menos una vez para que su alias esté disponible.</p>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" data-close="modal-invite">Cancelar</button>
-      <button id="btn-save-invite" class="btn btn-primary">Invitar</button>
+      <button class="btn btn-ghost  btn-sm" data-close="modal-invite" type="button">Cancelar</button>
+      <button class="btn btn-primary btn-sm" id="btn-save-invite" type="button">Invitar</button>
     </div>
   </div>
 </div>
 
-<!-- ═══ MODAL: VER MIEMBROS ═══ -->
-<div id="modal-members" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-members-title">
+<!-- Modal: Ver miembros -->
+<div id="modal-members" class="modal modal-sm">
   <div class="modal-backdrop" data-close="modal-members"></div>
-  <div class="modal-panel modal-sm">
+  <div class="modal-panel">
     <div class="modal-header">
-      <h2 id="modal-members-title" class="modal-title">👥 Miembros</h2>
-      <button class="modal-close" data-close="modal-members" aria-label="Cerrar">✕</button>
+      <span class="modal-title">Miembros del grupo</span>
+      <button class="modal-close" data-close="modal-members" type="button">✕</button>
     </div>
     <div class="modal-body">
-      <div id="members-list" class="members-list"></div>
+      <div id="members-list"></div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" data-close="modal-members">Cerrar</button>
+      <button class="btn btn-ghost btn-sm" data-close="modal-members" type="button">Cerrar</button>
     </div>
   </div>
 </div>
 
-<!-- ═══ MODAL: CONFIGURACIÓN ═══ -->
-<div id="modal-settings" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-settings-title">
+<!-- Modal: Settings -->
+<div id="modal-settings" class="modal">
   <div class="modal-backdrop" data-close="modal-settings"></div>
   <div class="modal-panel">
     <div class="modal-header">
-      <h2 id="modal-settings-title" class="modal-title">⚙️ Configuración</h2>
-      <button class="modal-close" data-close="modal-settings" aria-label="Cerrar">✕</button>
+      <span class="modal-title">⚙️ Configuración</span>
+      <button class="modal-close" data-close="modal-settings" type="button">✕</button>
     </div>
     <div class="modal-body">
-      <div class="form-group">
-        <label class="form-label" for="field-alias">Tu alias <span id="current-alias" class="alias-current"></span></label>
-        <input type="text" id="field-alias" class="input" placeholder="Ej: lautaro" autocomplete="off" />
-        <p class="form-hint">Otros usuarios pueden invitarte a un grupo usando tu alias. Solo letras y números, sin espacios.</p>
+      <!-- Alias -->
+      <div class="form-group" style="margin-bottom:.75rem">
+        <label class="form-label" for="field-alias">Mi alias</label>
+        <input id="field-alias" type="text" placeholder="Ej: juanpérez (sin espacios)" />
+        <p class="form-hint">Permite que otros te inviten a grupos con @alias sin conocer tu email.</p>
+        <p class="alias-current">Alias actual: <span id="current-alias">Sin alias</span></p>
       </div>
+
       <hr class="settings-divider" />
-      <div class="form-group">
-        <label class="form-label" for="field-ai-provider">Proveedor IA (escaneo de remitos)</label>
-        <select id="field-ai-provider" class="input">
-          <option value="gemini">Google Gemini Flash 2.5 (gratuito)</option>
-          <option value="claude">Anthropic Claude (Sonnet)</option>
+
+      <!-- AI Provider -->
+      <div class="form-group" style="margin-bottom:.5rem">
+        <label class="form-label" for="field-ai-provider">Proveedor de IA (para OCR)</label>
+        <select id="field-ai-provider">
+          <option value="gemini">Google Gemini Flash 2.5 (recomendado, gratuito)</option>
+          <option value="claude">Anthropic Claude</option>
           <option value="openai">OpenAI GPT-4o</option>
         </select>
       </div>
       <div class="form-group">
         <label class="form-label" for="field-ai-key">API Key</label>
-        <input type="password" id="field-ai-key" class="input" placeholder="Pegá tu clave aquí…" autocomplete="off" />
-        <p id="settings-hint" class="form-hint"></p>
+        <input id="field-ai-key" type="password" placeholder="Pegá tu API Key aquí" />
+        <p class="form-hint" id="settings-hint">Obtené tu clave en aistudio.google.com (gratuito)</p>
+        <p class="form-hint" style="color:var(--color-text-3);margin-top:.35rem">
+          🔒 Se guarda solo en este dispositivo. Nunca se envía a nuestros servidores.
+        </p>
       </div>
-      <div class="info-box">🔒 Tu clave se guarda <strong>solo en este dispositivo</strong>.</div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" data-close="modal-settings">Cancelar</button>
-      <button id="btn-save-settings" class="btn btn-primary">Guardar</button>
+      <button class="btn btn-ghost  btn-sm" data-close="modal-settings" type="button">Cancelar</button>
+      <button class="btn btn-primary btn-sm" id="btn-save-settings" type="button">Guardar</button>
     </div>
   </div>
 </div>
 
-<div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="false"></div>
+<!-- Toast container -->
+<div id="toast-container" class="toast-container"></div>
+
+<!-- Entry point (ES Module) -->
 <script type="module" src="js/app.js"></script>
 </body>
 </html>
