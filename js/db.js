@@ -1,156 +1,273 @@
-// ═══════════════════════════════════════════════════════════
-//  db.js — Operaciones CRUD con Firestore
-//  Soporta: remitos personales (/users/{uid}/remitos)
-//           remitos de grupo   (/groups/{groupId}/remitos)
-// ═══════════════════════════════════════════════════════════
-
 import {
-  getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
-  query, orderBy, where, onSnapshot, Timestamp, serverTimestamp,
-  setDoc, getDoc, arrayUnion, arrayRemove,
+  getFirestore,
+  collection,
+  doc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  orderBy,
+  where,
+  onSnapshot,
+  Timestamp,
+  serverTimestamp,
+  setDoc,
+  getDoc,
+  arrayUnion,
+  arrayRemove,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-import { APP } from "./config.js";
-
-let db;
-let activeUnsubscribe  = null;
-let groupsUnsubscribe  = null;
-
 export function initDB(firebaseApp) {
-  db = getFirestore(firebaseApp);
+  const db = getFirestore(firebaseApp);
+
+  // Active unsubscribe functions
+  let _unsubRemitos = null;
+  let _unsubGroups  = null;
+
+  // ─── Helpers ────────────────────────────────────────────────────────────────
+
+  function getRemitosRef(ctx) {
+    return ctx.type === "group"
+      ? collection(db, "groups", ctx.groupId, "remitos")
+      : collection(db, "users", ctx.uid, "remitos");
+  }
+
+  function normalizeRemito(docSnap) {
+    const d = docSnap.data();
+    return {
+      id:            docSnap.id,
+      numeroRemito:  d.numeroRemito  || "",
+      chofer:        d.chofer        || "",
+      desde:         d.desde         || "",
+      hasta:         d.hasta         || "",
+      cantidadLitros: typeof d.cantidadLitros === "number" ? d.cantidadLitros : 0,
+      fecha:         d.fecha instanceof Timestamp ? d.fecha.toDate() : (d.fecha ? new Date(d.fecha) : new Date()),
+      creadoEn:      d.creadoEn      || null,
+      actualizadoEn: d.actualizadoEn || null,
+    };
+  }
+
+  function sanitizeRemito(data) {
+    const out = {
+      numeroRemito:   (data.numeroRemito  || "").trim(),
+      chofer:         (data.chofer        || "").trim(),
+      desde:          (data.desde         || "").trim(),
+      hasta:          (data.hasta         || "").trim(),
+      cantidadLitros: parseFloat(data.cantidadLitros) || 0,
+    };
+
+    // Parse fecha
+    if (data.fecha instanceof Date) {
+      out.fecha = Timestamp.fromDate(data.fecha);
+    } else if (typeof data.fecha === "string" && data.fecha) {
+      // Ensure no timezone shift by appending noon local time
+      const d = new Date(data.fecha + "T12:00:00");
+      out.fecha = Timestamp.fromDate(d);
+    } else {
+      out.fecha = Timestamp.now();
+    }
+
+    return out;
+  }
+
+  // ─── Remitos CRUD ────────────────────────────────────────────────────────────
+
+  function subscribeRemitos({ ctx, filters = {}, onData, onError }) {
+    if (_unsubRemitos) {
+      _unsubRemitos();
+      _unsubRemitos = null;
+    }
+
+    const ref = getRemitosRef(ctx);
+    const constraints = [orderBy("fecha", "desc")];
+
+    if (filters.from) {
+      const fromDate = new Date(filters.from + "T00:00:00");
+      constraints.push(where("fecha", ">=", Timestamp.fromDate(fromDate)));
+    }
+    if (filters.to) {
+      const toDate = new Date(filters.to + "T23:59:59");
+      constraints.push(where("fecha", "<=", Timestamp.fromDate(toDate)));
+    }
+
+    const q = query(ref, ...constraints);
+
+    _unsubRemitos = onSnapshot(
+      q,
+      (snap) => {
+        const remitos = snap.docs.map(normalizeRemito);
+        onData(remitos);
+      },
+      (err) => {
+        console.error("subscribeRemitos error:", err);
+        if (onError) onError(err);
+      }
+    );
+
+    return _unsubRemitos;
+  }
+
+  async function addRemito(ctx, data) {
+    const ref = getRemitosRef(ctx);
+    const clean = sanitizeRemito(data);
+    clean.creadoEn = serverTimestamp();
+    return addDoc(ref, clean);
+  }
+
+  async function updateRemito(ctx, id, data) {
+    const ref = getRemitosRef(ctx);
+    const clean = sanitizeRemito(data);
+    clean.actualizadoEn = serverTimestamp();
+    return updateDoc(doc(ref, id), clean);
+  }
+
+  async function deleteRemito(ctx, id) {
+    const ref = getRemitosRef(ctx);
+    return deleteDoc(doc(ref, id));
+  }
+
+  function unsubscribeAll() {
+    if (_unsubRemitos) { _unsubRemitos(); _unsubRemitos = null; }
+  }
+
+  // ─── User Profile ────────────────────────────────────────────────────────────
+
+  async function saveUserProfile(uid, data) {
+    const profileRef = doc(db, "users", uid);
+    const profileData = {
+      email:       data.email       || "",
+      displayName: data.displayName || "",
+      updatedAt:   serverTimestamp(),
+    };
+    if (data.alias !== undefined) {
+      profileData.alias = data.alias.toLowerCase().trim().replace(/\s/g, "");
+    }
+    await setDoc(profileRef, profileData, { merge: true });
+
+    // Update alias index if alias provided
+    if (data.alias) {
+      const aliasKey = data.alias.toLowerCase().trim().replace(/\s/g, "");
+      if (aliasKey) {
+        const aliasRef = doc(db, "userAliases", aliasKey);
+        await setDoc(aliasRef, { uid, email: data.email });
+      }
+    }
+  }
+
+  async function getUserProfile(uid) {
+    const snap = await getDoc(doc(db, "users", uid));
+    return snap.exists() ? snap.data() : null;
+  }
+
+  async function resolveInvite(emailOrAlias) {
+    if (!emailOrAlias) return null;
+    const val = emailOrAlias.trim();
+    if (val.includes("@")) return val;
+
+    // Lookup by alias
+    const aliasKey = val.toLowerCase().replace(/\s/g, "");
+    const snap = await getDoc(doc(db, "userAliases", aliasKey));
+    if (snap.exists()) return snap.data().email;
+    return null;
+  }
+
+  // ─── Groups ──────────────────────────────────────────────────────────────────
+
+  function subscribeUserGroups(email, { onData, onError }) {
+    if (_unsubGroups) { _unsubGroups(); _unsubGroups = null; }
+
+    const q = query(
+      collection(db, "groups"),
+      where("memberEmails", "array-contains", email)
+    );
+
+    _unsubGroups = onSnapshot(
+      q,
+      (snap) => {
+        const groups = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        onData(groups);
+      },
+      (err) => {
+        console.error("subscribeUserGroups error:", err);
+        if (onError) onError(err);
+      }
+    );
+
+    return _unsubGroups;
+  }
+
+  async function createGroup({ name, creatorUid, creatorEmail, creatorAlias }) {
+    const member = {
+      uid:      creatorUid,
+      email:    creatorEmail,
+      alias:    creatorAlias || "",
+      joinedAt: new Date().toISOString(),
+    };
+    return addDoc(collection(db, "groups"), {
+      name,
+      createdBy:    creatorUid,
+      members:      [member],
+      memberEmails: [creatorEmail],
+      createdAt:    serverTimestamp(),
+    });
+  }
+
+  async function inviteMember(groupId, email) {
+    const groupRef = doc(db, "groups", groupId);
+    const snap = await getDoc(groupRef);
+    if (!snap.exists()) throw new Error("Grupo no encontrado");
+
+    const data = snap.data();
+    if (data.memberEmails.includes(email)) {
+      throw new Error("Este usuario ya es miembro del grupo");
+    }
+
+    const member = {
+      uid:      "",
+      email,
+      alias:    "",
+      joinedAt: new Date().toISOString(),
+    };
+
+    await updateDoc(groupRef, {
+      members:      arrayUnion(member),
+      memberEmails: arrayUnion(email),
+    });
+  }
+
+  async function removeMember(groupId, email) {
+    const groupRef = doc(db, "groups", groupId);
+    const snap = await getDoc(groupRef);
+    if (!snap.exists()) return;
+
+    const data    = snap.data();
+    const members = (data.members || []).filter((m) => m.email !== email);
+
+    await updateDoc(groupRef, {
+      members,
+      memberEmails: arrayRemove(email),
+    });
+  }
+
+  function unsubscribeGroups() {
+    if (_unsubGroups) { _unsubGroups(); _unsubGroups = null; }
+  }
+
+  // ─── Return public API ───────────────────────────────────────────────────────
+
   return {
-    subscribeRemitos, addRemito, updateRemito, deleteRemito, unsubscribeAll,
-    subscribeUserGroups, createGroup, inviteMember, removeMember,
-    saveUserProfile, getUserProfile, resolveInvite, unsubscribeGroups,
-  };
-}
-
-// ── Helpers de ruta ─────────────────────────────────────
-function getRemitosRef(ctx) {
-  return ctx.type === "group"
-    ? collection(db, "groups", ctx.groupId, "remitos")
-    : collection(db, "users", ctx.uid, "remitos");
-}
-
-function getDocRef(ctx, id) {
-  return ctx.type === "group"
-    ? doc(db, "groups", ctx.groupId, "remitos", id)
-    : doc(db, "users", ctx.uid, "remitos", id);
-}
-
-// ── Suscripción en tiempo real ──────────────────────────
-function subscribeRemitos({ ctx, filters = {}, onData, onError }) {
-  unsubscribeAll();
-  const constraints = [orderBy("fecha", "desc")];
-  if (filters.from) constraints.push(where("fecha", ">=", Timestamp.fromDate(new Date(filters.from + "T00:00:00"))));
-  if (filters.to)   constraints.push(where("fecha", "<=", Timestamp.fromDate(new Date(filters.to   + "T23:59:59"))));
-
-  activeUnsubscribe = onSnapshot(
-    query(getRemitosRef(ctx), ...constraints),
-    (snap) => onData(snap.docs.map(normalizeRemito)),
-    onError,
-  );
-}
-
-// ── CRUD ────────────────────────────────────────────────
-async function addRemito(data, ctx) {
-  return addDoc(getRemitosRef(ctx), { ...sanitizeRemito(data), creadoEn: serverTimestamp() });
-}
-
-async function updateRemito(id, data, ctx) {
-  return updateDoc(getDocRef(ctx, id), { ...sanitizeRemito(data), actualizadoEn: serverTimestamp() });
-}
-
-async function deleteRemito(id, ctx) {
-  return deleteDoc(getDocRef(ctx, id));
-}
-
-function unsubscribeAll() {
-  if (activeUnsubscribe) { activeUnsubscribe(); activeUnsubscribe = null; }
-}
-
-// ── Grupos ───────────────────────────────────────────────
-function subscribeUserGroups(email, { onData, onError }) {
-  if (groupsUnsubscribe) { groupsUnsubscribe(); groupsUnsubscribe = null; }
-  const q = query(collection(db, "groups"), where("memberEmails", "array-contains", email));
-  groupsUnsubscribe = onSnapshot(q,
-    (snap) => onData(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
-    onError,
-  );
-}
-
-async function createGroup({ name, creatorUid, creatorEmail, creatorAlias }) {
-  return addDoc(collection(db, "groups"), {
-    name: name.trim(),
-    createdBy: creatorUid,
-    members: [{ uid: creatorUid, email: creatorEmail, alias: creatorAlias || "", joinedAt: new Date().toISOString() }],
-    memberEmails: [creatorEmail],
-    createdAt: serverTimestamp(),
-  });
-}
-
-async function inviteMember(groupId, email) {
-  return updateDoc(doc(db, "groups", groupId), {
-    memberEmails: arrayUnion(email),
-    members: arrayUnion({ email, alias: "", uid: "", joinedAt: new Date().toISOString() }),
-  });
-}
-
-async function removeMember(groupId, email) {
-  const snap = await getDoc(doc(db, "groups", groupId));
-  if (!snap.exists()) return;
-  const members = (snap.data().members || []).filter((m) => m.email !== email);
-  return updateDoc(doc(db, "groups", groupId), { memberEmails: arrayRemove(email), members });
-}
-
-// ── Perfil de usuario / Alias ────────────────────────────
-async function saveUserProfile(uid, { alias, email, displayName }) {
-  const data = { email, displayName: displayName || "", updatedAt: serverTimestamp() };
-  if (alias !== undefined) data.alias = alias.toLowerCase().trim();
-  await setDoc(doc(db, "users", uid), data, { merge: true });
-  if (alias) await setDoc(doc(db, "userAliases", alias.toLowerCase().trim()), { uid, email });
-}
-
-async function getUserProfile(uid) {
-  const snap = await getDoc(doc(db, "users", uid));
-  return snap.exists() ? snap.data() : null;
-}
-
-async function resolveInvite(emailOrAlias) {
-  if (emailOrAlias.includes("@")) return emailOrAlias;
-  const snap = await getDoc(doc(db, "userAliases", emailOrAlias.toLowerCase().trim()));
-  return snap.exists() ? snap.data().email : null;
-}
-
-function unsubscribeGroups() {
-  if (groupsUnsubscribe) { groupsUnsubscribe(); groupsUnsubscribe = null; }
-}
-
-// ── Normalización y sanitización ─────────────────────────
-function normalizeRemito(d) {
-  const data = d.data();
-  return {
-    id: d.id,
-    numeroRemito:   data.numeroRemito   ?? "",
-    chofer:         data.chofer         ?? "",
-    desde:          data.desde          ?? "",
-    hasta:          data.hasta          ?? "",
-    cantidadLitros: data.cantidadLitros ?? 0,
-    fecha: data.fecha?.toDate ? data.fecha.toDate() : new Date(data.fecha ?? Date.now()),
-  };
-}
-
-function sanitizeRemito(data) {
-  let fechaTimestamp;
-  if (data.fecha instanceof Date)      fechaTimestamp = Timestamp.fromDate(data.fecha);
-  else if (typeof data.fecha === "string") fechaTimestamp = Timestamp.fromDate(new Date(data.fecha + "T12:00:00"));
-  else                                 fechaTimestamp = Timestamp.now();
-  return {
-    numeroRemito:   String(data.numeroRemito   ?? "").trim(),
-    chofer:         String(data.chofer         ?? "").trim(),
-    desde:          String(data.desde          ?? "").trim(),
-    hasta:          String(data.hasta          ?? "").trim(),
-    cantidadLitros: parseFloat(data.cantidadLitros) || 0,
-    fecha:          fechaTimestamp,
+    subscribeRemitos,
+    addRemito,
+    updateRemito,
+    deleteRemito,
+    unsubscribeAll,
+    subscribeUserGroups,
+    createGroup,
+    inviteMember,
+    removeMember,
+    saveUserProfile,
+    getUserProfile,
+    resolveInvite,
+    unsubscribeGroups,
   };
 }
