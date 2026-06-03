@@ -1,0 +1,19 @@
+{
+  "name": "Remitos — Gestión de Transporte",
+  "short_name": "Remitos",
+  "description": "Gestión de remitos de transporte de líquidos a granel",
+  "start_url": "/2do-remitos-app/",
+  "scope": "/2do-remitos-app/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0d0f18",
+  "theme_color": "#f59e0b",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' fill='%230d0f18'/><text y='140' x='20' font-size='140'>🚛</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
