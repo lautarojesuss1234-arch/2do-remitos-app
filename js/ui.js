@@ -11,6 +11,7 @@ let _deletingId   = null;
 let _scanImageB64 = null;
 let _activeTab    = "personal";
 let _groupView    = "list";
+let _switchTab    = () => {}; // set in mount()
 
 // ─── Formatters (created once) ───────────────────────────────────────────────
 const fmtDate = new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" });
@@ -37,12 +38,6 @@ function setText(id, val) {
 function toggleEl(id, show) {
   const el = ge(id);
   if (el) el.classList.toggle("hidden", !show);
-}
-
-function moveDataPanel(slotId) {
-  const panel = ge("data-panel");
-  const slot  = ge(slotId);
-  if (panel && slot) slot.appendChild(panel);
 }
 
 // ─── Toast ───────────────────────────────────────────────────────────────────
@@ -530,10 +525,9 @@ function enterGroup(groupId, groupName) {
   _ctx          = { type: "group", groupId };
   _groupView    = "detail";
 
-  toggleEl("group-list-view",   false);
-  toggleEl("group-detail-view", true);
+  _switchTab("personal");
+  toggleEl("group-context-banner", true);
   setText("group-detail-name", groupName);
-  moveDataPanel("group-data-slot");
 
   _DB.unsubscribeAll();
   startDataListener(_activeFilters);
@@ -544,9 +538,8 @@ function backToGroupList() {
   _ctx          = { type: "personal", uid: _Auth.currentUser()?.uid };
   _groupView    = "list";
 
-  toggleEl("group-list-view",   true);
-  toggleEl("group-detail-view", false);
-  moveDataPanel("personal-data-slot");
+  toggleEl("group-context-banner", false);
+  _switchTab("grupos");
 
   _DB.unsubscribeAll();
   startDataListener({});
@@ -823,14 +816,9 @@ export function initUI({ Auth, DB }) {
       document.querySelectorAll(".tab-panel").forEach((p) =>
         p.classList.toggle("hidden", p.id !== `tab-${tab}`)
       );
-      if (tab === "personal" && _groupView !== "detail") {
-        moveDataPanel("personal-data-slot");
-      }
       if (tab === "dashboard") renderDashboard();
     }
-
-    // Initialize: data panel lives in personal slot by default
-    moveDataPanel("personal-data-slot");
+    _switchTab = switchTab; // expose to module scope
 
     // ── New remito button ──
     ge("btn-new")?.addEventListener("click", () => {
