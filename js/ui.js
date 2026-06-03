@@ -39,6 +39,12 @@ function toggleEl(id, show) {
   if (el) el.classList.toggle("hidden", !show);
 }
 
+function moveDataPanel(slotId) {
+  const panel = ge("data-panel");
+  const slot  = ge(slotId);
+  if (panel && slot) slot.appendChild(panel);
+}
+
 // ─── Toast ───────────────────────────────────────────────────────────────────
 function toast(msg, type = "info", duration = 3500) {
   const container = ge("toast-container");
@@ -527,6 +533,7 @@ function enterGroup(groupId, groupName) {
   toggleEl("group-list-view",   false);
   toggleEl("group-detail-view", true);
   setText("group-detail-name", groupName);
+  moveDataPanel("group-data-slot");
 
   _DB.unsubscribeAll();
   startDataListener(_activeFilters);
@@ -539,8 +546,10 @@ function backToGroupList() {
 
   toggleEl("group-list-view",   true);
   toggleEl("group-detail-view", false);
+  moveDataPanel("personal-data-slot");
 
   _DB.unsubscribeAll();
+  startDataListener({});
 }
 
 function renderGroupList(groups) {
@@ -814,8 +823,14 @@ export function initUI({ Auth, DB }) {
       document.querySelectorAll(".tab-panel").forEach((p) =>
         p.classList.toggle("hidden", p.id !== `tab-${tab}`)
       );
+      if (tab === "personal" && _groupView !== "detail") {
+        moveDataPanel("personal-data-slot");
+      }
       if (tab === "dashboard") renderDashboard();
     }
+
+    // Initialize: data panel lives in personal slot by default
+    moveDataPanel("personal-data-slot");
 
     // ── New remito button ──
     ge("btn-new")?.addEventListener("click", () => {
