@@ -80,6 +80,11 @@
 
     <!-- ── TAB: PERSONAL ──────────────────────────────────────── -->
     <div id="tab-personal" class="tab-panel">
+      <div id="personal-data-slot"></div>
+    </div><!-- /tab-personal (data-panel moves here by default) -->
+
+    <!-- ── DATA PANEL (shared: personal + group) ─────────────── -->
+    <div id="data-panel">
 
       <!-- Toolbar -->
       <div class="toolbar">
@@ -179,7 +184,7 @@
         </div>
       </div>
 
-    </div><!-- /tab-personal -->
+    </div><!-- /data-panel -->
 
     <!-- ── TAB: GRUPOS ────────────────────────────────────────── -->
     <div id="tab-grupos" class="tab-panel hidden">
@@ -208,15 +213,8 @@
             <button id="btn-view-members"  class="btn btn-outline  btn-sm">👥 Miembros</button>
           </div>
         </div>
-
-        <!-- Group gets same toolbar + table as personal, reusing same element IDs -->
-        <!-- The context is switched via _ctx in ui.js so the same elements work -->
-        <p style="color:var(--color-text-3);font-size:.82rem;margin-bottom:.75rem">
-          Estás trabajando en modo grupo. Todos los miembros ven y editan los mismos remitos.
-        </p>
-      </div>
-
-    </div><!-- /tab-grupos -->
+        <div id="group-data-slot"></div>
+      </div><!-- /group-detail-view -->
 
     <!-- ── TAB: DASHBOARD ─────────────────────────────────────── -->
     <div id="tab-dashboard" class="tab-panel hidden">
