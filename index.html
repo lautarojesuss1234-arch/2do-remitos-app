@@ -80,11 +80,16 @@
 
     <!-- ── TAB: PERSONAL ──────────────────────────────────────── -->
     <div id="tab-personal" class="tab-panel">
-      <div id="personal-data-slot"></div>
-    </div><!-- /tab-personal (data-panel moves here by default) -->
 
-    <!-- ── DATA PANEL (shared: personal + group) ─────────────── -->
-    <div id="data-panel">
+      <!-- Group context banner (hidden unless inside a group) -->
+      <div id="group-context-banner" class="group-detail-header hidden" style="margin-bottom:.75rem">
+        <button id="btn-back-group" class="btn btn-ghost btn-sm">← Grupos</button>
+        <span id="group-detail-name" class="group-detail-title"></span>
+        <div class="group-detail-actions">
+          <button id="btn-invite-member" class="btn btn-secondary btn-sm">＋ Invitar</button>
+          <button id="btn-view-members"  class="btn btn-outline  btn-sm">👥 Miembros</button>
+        </div>
+      </div>
 
       <!-- Toolbar -->
       <div class="toolbar">
@@ -184,12 +189,11 @@
         </div>
       </div>
 
-    </div><!-- /data-panel -->
+    </div><!-- /tab-personal -->
 
     <!-- ── TAB: GRUPOS ────────────────────────────────────────── -->
     <div id="tab-grupos" class="tab-panel hidden">
 
-      <!-- List view -->
       <div id="group-list-view">
         <div class="groups-header">
           <span class="groups-title">Mis Grupos</span>
@@ -203,18 +207,7 @@
         </div>
       </div>
 
-      <!-- Detail view (hidden by default) -->
-      <div id="group-detail-view" class="hidden">
-        <div class="group-detail-header">
-          <button id="btn-back-group" class="btn btn-ghost btn-sm">← Volver</button>
-          <span id="group-detail-name" class="group-detail-title"></span>
-          <div class="group-detail-actions">
-            <button id="btn-invite-member" class="btn btn-secondary btn-sm">＋ Invitar</button>
-            <button id="btn-view-members"  class="btn btn-outline  btn-sm">👥 Miembros</button>
-          </div>
-        </div>
-        <div id="group-data-slot"></div>
-      </div><!-- /group-detail-view -->
+    </div><!-- /tab-grupos -->
 
     <!-- ── TAB: DASHBOARD ─────────────────────────────────────── -->
     <div id="tab-dashboard" class="tab-panel hidden">
