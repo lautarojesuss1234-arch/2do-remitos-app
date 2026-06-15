@@ -9,6 +9,7 @@ let _activeFilters = {};
 let _editingId    = null;
 let _deletingId   = null;
 let _scanImageB64 = null;
+let _remitoPhotoB64 = null;
 let _activeTab    = "personal";
 let _groupView    = "list";
 let _switchTab    = () => {}; // set in mount()
