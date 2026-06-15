@@ -39,6 +39,12 @@ body {
 
 button { cursor: pointer; border: none; outline: none; font-family: var(--font-ui); }
 input, select, textarea { font-family: var(--font-ui); outline: none; }
+
+/* Forzar visualización en mayúsculas para campos específicos */
+#field-chofer, #field-desde, #field-hasta, #field-numero,
+#filter-chofer, #filter-origen, #filter-destino {
+  text-transform: uppercase;
+}
 img { display: block; }
 
 .hidden { display: none !important; }

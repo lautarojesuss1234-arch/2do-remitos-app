@@ -51,10 +51,10 @@ export function initDB(firebaseApp) {
 
   function sanitizeRemito(data) {
     const out = {
-      numeroRemito:   (data.numeroRemito  || "").trim(),
-      chofer:         (data.chofer        || "").trim(),
-      desde:          (data.desde         || "").trim(),
-      hasta:          (data.hasta         || "").trim(),
+      numeroRemito:   (data.numeroRemito  || "").trim().toUpperCase(),
+      chofer:         (data.chofer        || "").trim().toUpperCase(),
+      desde:          (data.desde         || "").trim().toUpperCase(),
+      hasta:          (data.hasta         || "").trim().toUpperCase(),
       cantidadLitros: parseFloat(data.cantidadLitros) || 0,
       fotoUrl:        data.fotoUrl  || null,
       fotoPath:       data.fotoPath || null,
