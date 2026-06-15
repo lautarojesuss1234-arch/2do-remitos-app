@@ -644,6 +644,16 @@ async function handleAnalyzeScan() {
     openModal("modal-remito");
     setText("modal-remito-title", "Nuevo Remito (desde OCR)");
     _editingId = null;
+    _remitoPhotoB64 = _scanImageB64; // Pasar la foto optimizada al formulario
+    
+    // Mostrar preview en el formulario
+    const cont = ge("photo-preview-container");
+    const img = ge("form-photo-preview");
+    if (img && _remitoPhotoB64) {
+      img.src = _remitoPhotoB64;
+      cont.style.display = "flex";
+    }
+
     setText("scan-result-msg", "✅ Datos extraídos correctamente. Revisá y guardá.");
     ge("scan-result-msg")?.classList.remove("hidden");
     toast("Remito extraído con IA. Revisá los campos antes de guardar.", "info", 5000);
