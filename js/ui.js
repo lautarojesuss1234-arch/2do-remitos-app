@@ -284,6 +284,7 @@ function applyClientFilters(remitos) {
 
 function renderRow(r) {
   const fecha = r.fecha instanceof Date ? fmtDate.format(r.fecha) : "—";
+  const hasPhoto = _DB.getFotoLocal(r.id);
   return `<tr>
     <td class="col-num">
       <span class="cell-numero">${esc(r.numeroRemito || "—")}</span>
@@ -294,6 +295,9 @@ function renderRow(r) {
     <td><span class="tag tag-to">${esc(r.hasta)}</span></td>
     <td class="col-litros">
       <span class="cell-litros">${fmtNum.format(r.cantidadLitros)}</span>
+    </td>
+    <td style="text-align:center">
+      ${hasPhoto ? `<button class="btn-view-photo" data-id="${esc(r.id)}" title="Ver foto" style="background:none; border:none; cursor:pointer; font-size:1.2rem">🖼️</button>` : "—"}
     </td>
     <td class="col-actions">
       <div class="row-actions">
@@ -902,15 +906,26 @@ export function initUI({ Auth, DB }) {
           }
         }
 
+        let savedId = _editingId;
         if (_editingId) {
           await _DB.updateRemito(_ctx, _editingId, data);
           toast("Remito actualizado", "success");
         } else {
-          await _DB.addRemito(_ctx, data);
+          const docRef = await _DB.addRemito(_ctx, data);
+          savedId = docRef.id;
           toast("Remito guardado", "success");
         }
+
+        // Guardar foto en LocalStorage si existe
+        if (_remitoPhotoB64 && savedId) {
+          const success = _DB.saveFotoLocal(savedId, _remitoPhotoB64);
+          if (!success) toast("No hay espacio suficiente para la foto en este dispositivo", "warning");
+        }
+
         closeModal("modal-remito");
         _editingId = null;
+        _remitoPhotoB64 = null;
+        ge("photo-preview-container").style.display = "none";
       } catch (err) {
         setText("form-error", "Error al guardar: " + err.message);
         toast("Error al guardar", "error");
@@ -923,6 +938,16 @@ export function initUI({ Auth, DB }) {
     ge("remitos-body")?.addEventListener("click", (e) => {
       const editBtn   = e.target.closest(".btn-row-edit");
       const deleteBtn = e.target.closest(".btn-row-delete");
+      const photoBtn  = e.target.closest(".btn-view-photo");
+
+      if (photoBtn) {
+        const id = photoBtn.dataset.id;
+        const foto = _DB.getFotoLocal(id);
+        if (foto) {
+          const win = window.open();
+          win.document.write(`<img src="${foto}" style="max-width:100%">`);
+        }
+      }
 
       if (editBtn) {
         const id = editBtn.dataset.id;
@@ -930,6 +955,18 @@ export function initUI({ Auth, DB }) {
         if (r) {
           _editingId = id;
           fillRemitoForm(r);
+
+          // Mostrar foto si existe en LocalStorage
+          const cont = ge("photo-preview-container");
+          const img = ge("form-photo-preview");
+          const localFoto = _DB.getFotoLocal(id);
+          if (localFoto) {
+            img.src = localFoto;
+            cont.style.display = "flex";
+          } else {
+            cont.style.display = "none";
+          }
+
           setText("modal-remito-title", "Editar Remito");
           openModal("modal-remito");
         }

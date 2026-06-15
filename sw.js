@@ -1,4 +1,4 @@
-const CACHE_NAME = "remitos-v1";
+const CACHE_NAME = "remitos-v2";
 
 // Archivos a cachear para funcionamiento offline
 const STATIC_ASSETS = [
