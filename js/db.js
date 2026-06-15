@@ -16,7 +16,6 @@ import {
   arrayUnion,
   arrayRemove,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
 export function initDB(firebaseApp) {
   const db = getFirestore(firebaseApp);
 
@@ -44,6 +43,9 @@ export function initDB(firebaseApp) {
       fecha:         d.fecha instanceof Timestamp ? d.fecha.toDate() : (d.fecha ? new Date(d.fecha) : new Date()),
       creadoEn:      d.creadoEn      || null,
       actualizadoEn: d.actualizadoEn || null,
+      fotoUrl:       d.fotoUrl       || null,
+      fotoPath:      d.fotoPath      || null,
+      expiraEn:      d.expiraEn instanceof Timestamp ? d.expiraEn.toDate() : null,
     };
   }
 
@@ -54,7 +56,14 @@ export function initDB(firebaseApp) {
       desde:          (data.desde         || "").trim(),
       hasta:          (data.hasta         || "").trim(),
       cantidadLitros: parseFloat(data.cantidadLitros) || 0,
+      fotoUrl:        data.fotoUrl  || null,
+      fotoPath:       data.fotoPath || null,
     };
+
+    // Calcular expiración (2 meses)
+    const expDate = new Date();
+    expDate.setMonth(expDate.getMonth() + 2);
+    out.expiraEn = Timestamp.fromDate(expDate);
 
     // Parse fecha
     if (data.fecha instanceof Date) {
@@ -123,7 +132,45 @@ export function initDB(firebaseApp) {
 
   async function deleteRemito(ctx, id) {
     const ref = getRemitosRef(ctx);
+    // Borrar foto de LocalStorage si existe
+    localStorage.removeItem(`foto_remito_${id}`);
     return deleteDoc(doc(ref, id));
+  }
+
+  function saveFotoLocal(id, base64) {
+    try {
+      localStorage.setItem(`foto_remito_${id}`, base64);
+      return true;
+    } catch (e) {
+      console.error("LocalStorage lleno o error:", e);
+      return false;
+    }
+  }
+
+  function getFotoLocal(id) {
+    return localStorage.getItem(`foto_remito_${id}`);
+  }
+
+  function cleanOldPhotos(remitos) {
+    const now = new Date();
+    remitos.forEach(r => {
+      if (r.expiraEn && r.expiraEn < now) {
+        localStorage.removeItem(`foto_remito_${r.id}`);
+      }
+    });
+    
+    // Limpieza agresiva: borrar cualquier cosa que empiece con foto_remito_ 
+    // pero cuyo ID no esté en la lista actual de remitos cargados
+    const currentIds = new Set(remitos.map(r => r.id));
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key.startsWith("foto_remito_")) {
+        const id = key.replace("foto_remito_", "");
+        if (!currentIds.has(id)) {
+          localStorage.removeItem(key);
+        }
+      }
+    }
   }
 
   function unsubscribeAll() {
@@ -269,5 +316,8 @@ export function initDB(firebaseApp) {
     getUserProfile,
     resolveInvite,
     unsubscribeGroups,
+    saveFotoLocal,
+    getFotoLocal,
+    cleanOldPhotos,
   };
 }

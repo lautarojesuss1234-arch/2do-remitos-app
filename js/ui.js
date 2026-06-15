@@ -401,6 +401,7 @@ function startDataListener(filters = {}) {
 
 function handleNewData(remitos) {
   _allRemitos = remitos;
+  _DB.cleanOldPhotos(remitos); // Limpieza de fotos locales antiguas
   renderTable(remitos);
   renderStats(remitos);
   populateFilterDropdowns(remitos);
@@ -823,7 +824,9 @@ export function initUI({ Auth, DB }) {
     // ── New remito button ──
     ge("btn-new")?.addEventListener("click", () => {
       _editingId = null;
-      fillRemitoForm({ fecha: todayISO() });
+      _remitoPhotoB64 = null;
+      ge("photo-preview-container").style.display = "none";
+      fillRemitoForm({});
       setText("modal-remito-title", "Nuevo Remito");
       openModal("modal-remito");
     });
@@ -885,6 +888,20 @@ export function initUI({ Auth, DB }) {
       if (btn) { btn.disabled = true; btn.textContent = "Guardando…"; }
 
       try {
+        // Validación de duplicados (Lógica pura)
+        const isDuplicate = _allRemitos.some((r) => 
+          r.id !== _editingId && 
+          r.numeroRemito.trim().toLowerCase() === data.numeroRemito.trim().toLowerCase() &&
+          r.chofer.trim().toLowerCase() === data.chofer.trim().toLowerCase()
+        );
+
+        if (isDuplicate) {
+          if (!confirm(`Ya existe un remito N° ${data.numeroRemito} para el chofer ${data.chofer}. ¿Deseas guardarlo de todas formas?`)) {
+            if (btn) { btn.disabled = false; btn.textContent = "Guardar"; }
+            return;
+          }
+        }
+
         if (_editingId) {
           await _DB.updateRemito(_ctx, _editingId, data);
           toast("Remito actualizado", "success");
@@ -960,6 +977,11 @@ export function initUI({ Auth, DB }) {
 
       // Date filters go to Firestore query
       startDataListener({ from, to });
+    });
+
+    ge("btn-remove-photo")?.addEventListener("click", () => {
+      _remitoPhotoB64 = null;
+      ge("photo-preview-container").style.display = "none";
     });
 
     ge("btn-clear-filters")?.addEventListener("click", () => {
