@@ -67,7 +67,7 @@ function closeModal(id) {
 }
 
 // ─── Image optimization for OCR ──────────────────────────────────────────────
-function optimizeImage(dataUrl, maxSize = 1024) {
+function optimizeImage(dataUrl, maxSize = 800) {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
@@ -79,8 +79,12 @@ function optimizeImage(dataUrl, maxSize = 1024) {
       const canvas = document.createElement("canvas");
       canvas.width  = width;
       canvas.height = height;
-      canvas.getContext("2d").drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL("image/jpeg", 0.82));
+      const ctx = canvas.getContext("2d");
+      // Mejorar legibilidad para OCR
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL("image/jpeg", 0.7)); // Calidad 0.7 es ideal para OCR y liviano
     };
     img.src = dataUrl;
   });
@@ -100,7 +104,7 @@ Ejemplo: {"numeroRemito":"00047253","fecha":"2026-05-28","chofer":"RIVERO JUAN C
 
 async function callGeminiOCR(apiKey, base64Data, mediaType) {
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
