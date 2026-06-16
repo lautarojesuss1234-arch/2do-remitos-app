@@ -91,15 +91,19 @@ function optimizeImage(dataUrl, maxSize = 800) {
 }
 
 // ─── OCR providers ───────────────────────────────────────────────────────────
-const OCR_PROMPT = `Eres un extractor de datos experto en remitos de transporte de vino.
-Analiza la imagen y extrae los datos siguiendo estas reglas estrictas:
-- numeroRemito: El número que aparece después de "N° - " (ej: 00047253).
-- fecha: La fecha del remito en formato "YYYY-MM-DD".
-- chofer: El nombre que aparece en la parte inferior, justo arriba de "FIRMA DEL CONDUCTOR" (ej: RIVERO JUAN CARLOS). Ignora otros nombres.
-- desde: El nombre que aparece JUSTO A LA DERECHA del recuadro que dice "DESDE". NO uses el nombre de la empresa del encabezado (AITOR IDER BALBO).
-- hasta: El nombre que aparece JUSTO A LA DERECHA del recuadro que dice "HASTA".
-- cantidadLitros: El número que aparece en la fila "TOTAL ENTREGADO" o bajo la columna "Litros" al lado de "Total Litros".
-Responder SOLO con un objeto JSON válido, sin markdown, sin texto adicional.
+const OCR_PROMPT = `Eres un extractor de datos experto en remitos de transporte de vino. 
+IMPORTANTE: La imagen puede estar rotada; analízala en cualquier orientación para encontrar los campos correctos.
+
+REGLAS CRÍTICAS:
+1. "desde": Busca el recuadro que dice "DESDE". El valor es el nombre que está INMEDIATAMENTE al lado o dentro de su área de influencia (ej: "LUIS GONZALO PALAU"). 
+   - PROHIBIDO: No uses "AITOR IDER BALBO" ni "BAUDREL Y VIOR", esos son nombres de la empresa del encabezado.
+2. "hasta": Busca el recuadro que dice "HASTA". El valor es el nombre al lado (ej: "A. I. BALBO").
+3. "numeroRemito": Busca "N° -" y toma el número de 8 dígitos (ej: 00047253).
+4. "chofer": Busca "FIRMA DEL CONDUCTOR" y toma el nombre que está justo ARRIBA de esa línea (ej: "RIVERO JUAN CARLOS").
+5. "fecha": Busca "Fecha" y extrae en formato YYYY-MM-DD.
+6. "cantidadLitros": Busca "TOTAL ENTREGADO" o "Total Litros" y toma el número mayor (ej: 31860).
+
+Responde ÚNICAMENTE con el objeto JSON, sin texto extra.
 Ejemplo: {"numeroRemito":"00047253","fecha":"2026-05-28","chofer":"RIVERO JUAN CARLOS","desde":"LUIS GONZALO PALAU","hasta":"A. I. BALBO","cantidadLitros":31860}`;
 
 async function callGeminiOCR(apiKey, base64Data, mediaType) {
