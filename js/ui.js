@@ -87,16 +87,16 @@ function optimizeImage(dataUrl, maxSize = 1024) {
 }
 
 // ─── OCR providers ───────────────────────────────────────────────────────────
-const OCR_PROMPT = `Eres un extractor de datos de remitos de transporte de líquidos a granel.
-Reglas de extracción:
-- numeroRemito: código/número del remito (puede incluir guiones)
-- fecha: formato "YYYY-MM-DD"
-- chofer: nombre del conductor, suele estar en la parte inferior izquierda cerca de "FIRMA DEL CONDUCTOR"
-- desde: bodega de origen (texto a la derecha del recuadro "DESDE" o similar)
-- hasta: bodega de destino (texto a la derecha del recuadro "HASTA" o similar)
-- cantidadLitros: número total de litros (valor bajo "Total Litros" o el mayor número en columna "Litros")
-Responder SOLO con un objeto JSON válido, sin markdown, sin texto adicional, sin backticks.
-Ejemplo: {"numeroRemito":"0001-00123","fecha":"2024-05-29","chofer":"Juan Pérez","desde":"Bodega Origen","hasta":"Bodega Destino","cantidadLitros":33840}`;
+const OCR_PROMPT = `Eres un extractor de datos experto en remitos de transporte de vino.
+Analiza la imagen y extrae los datos siguiendo estas reglas estrictas:
+- numeroRemito: El número que aparece después de "N° - " (ej: 00047253).
+- fecha: La fecha del remito en formato "YYYY-MM-DD".
+- chofer: El nombre que aparece en la parte inferior, justo arriba de "FIRMA DEL CONDUCTOR" (ej: RIVERO JUAN CARLOS). Ignora otros nombres.
+- desde: El nombre que aparece JUSTO A LA DERECHA del recuadro que dice "DESDE". NO uses el nombre de la empresa del encabezado (AITOR IDER BALBO).
+- hasta: El nombre que aparece JUSTO A LA DERECHA del recuadro que dice "HASTA".
+- cantidadLitros: El número que aparece en la fila "TOTAL ENTREGADO" o bajo la columna "Litros" al lado de "Total Litros".
+Responder SOLO con un objeto JSON válido, sin markdown, sin texto adicional.
+Ejemplo: {"numeroRemito":"00047253","fecha":"2026-05-28","chofer":"RIVERO JUAN CARLOS","desde":"LUIS GONZALO PALAU","hasta":"A. I. BALBO","cantidadLitros":31860}`;
 
 async function callGeminiOCR(apiKey, base64Data, mediaType) {
   const res = await fetch(
