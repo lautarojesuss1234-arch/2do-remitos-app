@@ -481,7 +481,7 @@
         </p>
       </div>
       <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--color-border); text-align: center; opacity: 0.6; font-size: 0.75rem;">
-        Versión del Sistema: <span style="font-weight: bold;">v3.3.0</span>
+        Versión del Sistema: <span style="font-weight: bold;">v3.4.0</span>
       </div>
     </div>
     <div class="modal-footer">
@@ -495,7 +495,11 @@
 <div id="toast-container" class="toast-container"></div>
 
 <!-- Entry point (ES Module) -->
-<script type="module" src="js/app.js"></script>
+<script type="module">
+  // Cache-busting para forzar carga de archivos nuevos
+  const v = "3.4.0";
+  import(`./js/app.js?v=${v}`).catch(console.error);
+</script>
 
 <!-- PWA: Service Worker -->
 <script>

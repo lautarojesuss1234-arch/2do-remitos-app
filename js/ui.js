@@ -113,7 +113,7 @@ Ejemplo: {"numeroRemito":"00047253","fecha":"2026-05-28","chofer":"RIVERO JUAN C
 
 async function callGeminiOCR(apiKey, base64Data, mediaType) {
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
