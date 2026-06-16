@@ -3,7 +3,7 @@
 <head>
   <script>
     // Limpieza agresiva de caché al detectar nueva versión (protegiendo localStorage de fotos)
-    const CURRENT_VERSION = "3.6.1";
+    const CURRENT_VERSION = "3.7.0";
     if (localStorage.getItem("app_version") !== CURRENT_VERSION) {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(registrations => {
@@ -484,7 +484,8 @@
       <div class="form-group" style="margin-bottom:.5rem">
         <label class="form-label" for="field-ai-provider">Proveedor de IA (para OCR)</label>
         <select id="field-ai-provider">
-          <option value="gemini">Google Gemini 1.5 Flash (Gratuito, 15 RPM)</option>
+          <option value="gemini-2.5-flash">Gemini 2.5 Flash (Recomendado)</option>
+          <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite (Más rápido)</option>
           <option value="claude">Anthropic Claude</option>
           <option value="openai">OpenAI GPT-4o</option>
         </select>
@@ -498,7 +499,7 @@
         </p>
       </div>
       <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--color-border); text-align: center; opacity: 0.6; font-size: 0.75rem;">
-        Versión del Sistema: <span style="font-weight: bold;">v3.6.1</span>
+        Versión del Sistema: <span style="font-weight: bold;">v3.7.0</span>
       </div>
     </div>
     <div class="modal-footer">
@@ -514,7 +515,7 @@
 <!-- Entry point (ES Module) -->
 <script type="module">
   // Cache-busting para forzar carga de archivos nuevos
-  const v = "3.6.1";
+  const v = "3.7.0";
   import(`./js/app.js?v=${v}`).catch(console.error);
 </script>
 

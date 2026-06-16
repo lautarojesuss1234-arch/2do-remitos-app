@@ -111,9 +111,11 @@ REGLAS CRÍTICAS:
 Responde ÚNICAMENTE con el objeto JSON, sin texto extra.
 Ejemplo: {"numeroRemito":"00047253","fecha":"2026-05-28","chofer":"RIVERO JUAN CARLOS","desde":"LUIS GONZALO PALAU","hasta":"A. I. BALBO","cantidadLitros":31860}`;
 
-async function callGeminiOCR(apiKey, base64Data, mediaType) {
+async function callGeminiOCR(apiKey, base64Data, mediaType, model = "gemini-1.5-flash") {
+  // Ajustar el nombre del modelo para la URL
+  // Si el usuario seleccionó gemini-2.5-flash o gemini-2.0-flash-lite, usamos esos.
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -127,7 +129,11 @@ async function callGeminiOCR(apiKey, base64Data, mediaType) {
       }),
     }
   );
-  if (!res.ok) throw new Error(`Gemini API error: ${res.status}`);
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const msg = errorData.error?.message || res.status;
+    throw new Error(`Gemini API error (${model}): ${msg}`);
+  }
   const json = await res.json();
   return json.candidates?.[0]?.content?.parts?.[0]?.text || "";
 }
@@ -187,7 +193,11 @@ async function callOCR(provider, apiKey, imageDataUrl) {
   const mediaType = meta || "image/jpeg";
 
   switch (provider) {
-    case "gemini": return callGeminiOCR(apiKey, base64Data, mediaType);
+    case "gemini": // fallback para versiones viejas
+    case "gemini-2.5-flash": 
+      return callGeminiOCR(apiKey, base64Data, mediaType, "gemini-2.5-flash");
+    case "gemini-2.0-flash-lite":
+      return callGeminiOCR(apiKey, base64Data, mediaType, "gemini-2.0-flash-lite");
     case "claude": return callClaudeOCR(apiKey, base64Data, mediaType);
     case "openai": return callOpenAIOCR(apiKey, base64Data, mediaType);
     default: throw new Error(`Proveedor desconocido: ${provider}`);
