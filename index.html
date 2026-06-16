@@ -333,7 +333,7 @@
     <div class="modal-body">
       <!-- Hidden file inputs -->
       <input id="scan-camera"        type="file" accept="image/*" capture="environment" class="hidden" />
-      <input id="scan-gallery-input" type="file" accept="image/*"                       class="hidden" />
+      <input id="scan-gallery-input" type="file" accept="image/*" multiple class="hidden" />
 
       <div class="scan-drop-area">
         <div class="scan-buttons-row">
@@ -479,6 +479,9 @@
         <p class="form-hint" style="color:var(--color-text-3);margin-top:.35rem">
           🔒 Se guarda solo en este dispositivo. Nunca se envía a nuestros servidores.
         </p>
+      </div>
+      <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--color-border); text-align: center; opacity: 0.6; font-size: 0.75rem;">
+        Versión del Sistema: <span style="font-weight: bold;">v3.1.0</span>
       </div>
     </div>
     <div class="modal-footer">

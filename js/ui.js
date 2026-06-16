@@ -893,8 +893,68 @@ export function initUI({ Auth, DB }) {
       e.target.value = "";
     });
 
-    ge("scan-gallery-input")?.addEventListener("change", (e) => {
-      handleImageForScan(e.target.files?.[0]);
+    ge("scan-gallery-input")?.addEventListener("change", async (e) => {
+      const files = Array.from(e.target.files || []);
+      if (files.length === 0) return;
+      
+      if (files.length > 12) {
+        toast("Máximo 12 fotos a la vez para evitar bloqueos", "warning");
+      }
+      
+      const limitedFiles = files.slice(0, 12);
+      
+      if (limitedFiles.length === 1) {
+        handleImageForScan(limitedFiles[0]);
+      } else {
+        // Procesamiento múltiple
+        closeModal("modal-scan");
+        toast(`Procesando ${limitedFiles.length} remitos en cola...`, "info");
+        
+        const ai = getAISettings();
+        if (!ai.key) {
+          toast("Configurá tu API Key primero", "error");
+          openModal("modal-settings");
+          return;
+        }
+
+        for (const file of limitedFiles) {
+          try {
+            const dataUrl = await new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onload = (ev) => resolve(ev.target.result);
+              reader.readAsDataURL(file);
+            });
+            
+            const optimized = await optimizeImage(dataUrl);
+            const raw = await callOCR(ai.provider, ai.key, optimized);
+            let cleaned = raw.replace(/```json|```/g, "").trim();
+            const parsed = JSON.parse(cleaned);
+            
+            const mapped = {
+              numeroRemito:   parsed.numeroRemito   || parsed.numero_remito   || "",
+              fecha:          parsed.fecha          || todayISO(),
+              chofer:         parsed.chofer         || parsed.nombre_chofer   || "",
+              desde:          parsed.desde          || parsed.bodega_origen   || "",
+              hasta:          parsed.hasta          || parsed.bodega_destino  || "",
+              cantidadLitros: parsed.cantidadLitros || parsed.litros          || 0,
+            };
+            
+            // Guardar directamente en Firestore
+            const docRef = await _DB.addRemito(_ctx, mapped);
+            // Guardar foto en LocalStorage
+            _DB.saveFotoLocal(docRef.id, optimized);
+            
+            toast(`Guardado: ${mapped.numeroRemito || 'Remito sin número'}`, "success");
+          } catch (err) {
+            console.error("Error en procesamiento múltiple:", err);
+            toast(`Error al procesar un remito: ${err.message}`, "error");
+          }
+          
+          // Pequeña espera entre peticiones para no saturar la API (Rate Limit)
+          await new Promise(r => setTimeout(r, 2000));
+        }
+        toast("Procesamiento múltiple finalizado", "success");
+      }
       e.target.value = "";
     });
 
