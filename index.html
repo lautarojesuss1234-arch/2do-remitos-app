@@ -2,19 +2,20 @@
 <html lang="es">
 <head>
   <script>
-    // Limpieza agresiva de caché al detectar nueva versión
-    const CURRENT_VERSION = "3.6.0";
+    // Limpieza agresiva de caché al detectar nueva versión (protegiendo localStorage de fotos)
+    const CURRENT_VERSION = "3.6.1";
     if (localStorage.getItem("app_version") !== CURRENT_VERSION) {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(registrations => {
           for (let registration of registrations) { registration.unregister(); }
         });
       }
+      // Solo borrar caches de archivos, NO localStorage donde están las fotos
       caches.keys().then(names => {
         for (let name of names) caches.delete(name);
       });
       localStorage.setItem("app_version", CURRENT_VERSION);
-      console.log("Caché limpiado para v" + CURRENT_VERSION);
+      console.log("Caché de archivos limpiado para v" + CURRENT_VERSION);
     }
   </script>
   <meta charset="UTF-8" />
@@ -497,7 +498,7 @@
         </p>
       </div>
       <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--color-border); text-align: center; opacity: 0.6; font-size: 0.75rem;">
-        Versión del Sistema: <span style="font-weight: bold;">v3.6.0</span>
+        Versión del Sistema: <span style="font-weight: bold;">v3.6.1</span>
       </div>
     </div>
     <div class="modal-footer">
@@ -513,7 +514,7 @@
 <!-- Entry point (ES Module) -->
 <script type="module">
   // Cache-busting para forzar carga de archivos nuevos
-  const v = "3.6.0";
+  const v = "3.6.1";
   import(`./js/app.js?v=${v}`).catch(console.error);
 </script>
 
