@@ -481,7 +481,7 @@
         </p>
       </div>
       <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--color-border); text-align: center; opacity: 0.6; font-size: 0.75rem;">
-        Versión del Sistema: <span style="font-weight: bold;">v3.2.1</span>
+        Versión del Sistema: <span style="font-weight: bold;">v3.3.0</span>
       </div>
     </div>
     <div class="modal-footer">
@@ -501,8 +501,29 @@
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
-      navigator.serviceWorker.register("/2do-remitos-app/sw.js")
-        .catch(() => {}); // falla silenciosamente si no hay HTTPS
+      navigator.serviceWorker.register("/2do-remitos-app/sw.js").then(reg => {
+        // Detectar actualizaciones en segundo plano
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // Nueva versión disponible y lista
+              if (confirm("Nueva versión disponible. ¿Actualizar ahora?")) {
+                window.location.reload();
+              }
+            }
+          });
+        });
+      }).catch(() => {});
+    });
+
+    // Asegurar que la página se recargue cuando el nuevo SW tome el control
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) {
+        window.location.reload();
+        refreshing = true;
+      }
     });
   }
 </script>
