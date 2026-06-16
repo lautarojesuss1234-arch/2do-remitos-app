@@ -63,7 +63,12 @@ function openModal(id) {
 
 function closeModal(id) {
   const m = ge(id);
-  if (m) m.classList.remove("is-open");
+  if (m) {
+    m.classList.remove("is-open");
+    if (id === "modal-remito") {
+      document.dispatchEvent(new CustomEvent('remito-modal-closed'));
+    }
+  }
 }
 
 // ─── Image optimization for OCR ──────────────────────────────────────────────
@@ -898,7 +903,7 @@ export function initUI({ Auth, DB }) {
       if (files.length === 0) return;
       
       if (files.length > 12) {
-        toast("Máximo 12 fotos a la vez para evitar bloqueos", "warning");
+        toast("Máximo 12 fotos a la vez", "warning");
       }
       
       const limitedFiles = files.slice(0, 12);
@@ -906,10 +911,8 @@ export function initUI({ Auth, DB }) {
       if (limitedFiles.length === 1) {
         handleImageForScan(limitedFiles[0]);
       } else {
-        // Procesamiento múltiple
+        // Procesamiento múltiple con REVISIÓN MANUAL
         closeModal("modal-scan");
-        toast(`Procesando ${limitedFiles.length} remitos en cola...`, "info");
-        
         const ai = getAISettings();
         if (!ai.key) {
           toast("Configurá tu API Key primero", "error");
@@ -917,7 +920,23 @@ export function initUI({ Auth, DB }) {
           return;
         }
 
+        toast(`Iniciando cola de revisión para ${limitedFiles.length} fotos...`, "info");
+
+        // Creamos una cola de tareas
+        const queue = [];
         for (const file of limitedFiles) {
+          queue.push(file);
+        }
+
+        async function processNextInQueue() {
+          if (queue.length === 0) {
+            toast("Revisión de cola finalizada", "success");
+            return;
+          }
+
+          const file = queue.shift();
+          toast(`Analizando siguiente remito (${limitedFiles.length - queue.length}/${limitedFiles.length})...`, "info");
+
           try {
             const dataUrl = await new Promise((resolve) => {
               const reader = new FileReader();
@@ -930,30 +949,47 @@ export function initUI({ Auth, DB }) {
             let cleaned = raw.replace(/```json|```/g, "").trim();
             const parsed = JSON.parse(cleaned);
             
-            const mapped = {
+            // Pre-llenar el formulario pero NO guardar todavía
+            fillRemitoForm({
               numeroRemito:   parsed.numeroRemito   || parsed.numero_remito   || "",
               fecha:          parsed.fecha          || todayISO(),
               chofer:         parsed.chofer         || parsed.nombre_chofer   || "",
               desde:          parsed.desde          || parsed.bodega_origen   || "",
               hasta:          parsed.hasta          || parsed.bodega_destino  || "",
               cantidadLitros: parsed.cantidadLitros || parsed.litros          || 0,
+            });
+
+            _editingId = null;
+            _remitoPhotoB64 = optimized;
+            
+            const cont = ge("photo-preview-container");
+            const img = ge("form-photo-preview");
+            if (img && _remitoPhotoB64) {
+              img.src = _remitoPhotoB64;
+              cont.style.display = "flex";
+            }
+
+            setText("modal-remito-title", `Revisión Manual (${limitedFiles.length - queue.length}/${limitedFiles.length})`);
+            openModal("modal-remito");
+
+            // Modificamos temporalmente el comportamiento del botón guardar para que siga con la cola
+            const originalSaveHandler = ge("btn-save").onclick;
+            
+            // Usamos un listener de un solo uso para detectar cuando se cierra el modal (por guardar o cancelar)
+            const onModalClose = () => {
+              document.removeEventListener('remito-modal-closed', onModalClose);
+              // Esperar un poco y procesar el siguiente
+              setTimeout(processNextInQueue, 1000);
             };
-            
-            // Guardar directamente en Firestore
-            const docRef = await _DB.addRemito(_ctx, mapped);
-            // Guardar foto en LocalStorage
-            _DB.saveFotoLocal(docRef.id, optimized);
-            
-            toast(`Guardado: ${mapped.numeroRemito || 'Remito sin número'}`, "success");
+            document.addEventListener('remito-modal-closed', onModalClose);
+
           } catch (err) {
-            console.error("Error en procesamiento múltiple:", err);
-            toast(`Error al procesar un remito: ${err.message}`, "error");
+            toast(`Error al analizar: ${err.message}. Saltando al siguiente.`, "error");
+            setTimeout(processNextInQueue, 1000);
           }
-          
-          // Pequeña espera entre peticiones para no saturar la API (Rate Limit)
-          await new Promise(r => setTimeout(r, 2000));
         }
-        toast("Procesamiento múltiple finalizado", "success");
+
+        processNextInQueue();
       }
       e.target.value = "";
     });
@@ -1005,6 +1041,7 @@ export function initUI({ Auth, DB }) {
         _editingId = null;
         _remitoPhotoB64 = null;
         ge("photo-preview-container").style.display = "none";
+        document.dispatchEvent(new CustomEvent('remito-modal-closed'));
       } catch (err) {
         setText("form-error", "Error al guardar: " + err.message);
         toast("Error al guardar", "error");
