@@ -111,9 +111,8 @@ REGLAS CRÍTICAS:
 Responde ÚNICAMENTE con el objeto JSON, sin texto extra.
 Ejemplo: {"numeroRemito":"00047253","fecha":"2026-05-28","chofer":"RIVERO JUAN CARLOS","desde":"LUIS GONZALO PALAU","hasta":"A. I. BALBO","cantidadLitros":31860}`;
 
-async function callGeminiOCR(apiKey, base64Data, mediaType, model = "gemini-1.5-flash") {
-  // Ajustar el nombre del modelo para la URL
-  // Si el usuario seleccionó gemini-2.5-flash o gemini-2.0-flash-lite, usamos esos.
+async function callGeminiOCR(apiKey, base64Data, mediaType, model = "gemini-3.5-flash-lite") {
+  // El ID recibido desde Configuración se usa directamente en el endpoint REST.
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
     {
@@ -193,8 +192,12 @@ async function callOCR(provider, apiKey, imageDataUrl) {
   const mediaType = meta || "image/jpeg";
 
   switch (provider) {
-    case "gemini": // fallback para versiones viejas
-    case "gemini-2.5-flash": 
+    case "gemini": // valor heredado de versiones anteriores: usar la opción recomendada actual
+    case "gemini-3.5-flash-lite":
+      return callGeminiOCR(apiKey, base64Data, mediaType, "gemini-3.5-flash-lite");
+    case "gemini-3.5-flash":
+      return callGeminiOCR(apiKey, base64Data, mediaType, "gemini-3.5-flash");
+    case "gemini-2.5-flash":
       return callGeminiOCR(apiKey, base64Data, mediaType, "gemini-2.5-flash");
     case "gemini-2.0-flash-lite":
       return callGeminiOCR(apiKey, base64Data, mediaType, "gemini-2.0-flash-lite");
@@ -439,7 +442,7 @@ function handleNewData(remitos) {
 // ─── Settings ─────────────────────────────────────────────────────────────────
 function getAISettings() {
   return {
-    provider: localStorage.getItem("remitos_ai_provider") || "gemini",
+    provider: localStorage.getItem("remitos_ai_provider") || "gemini-3.5-flash-lite",
     key:      localStorage.getItem("remitos_ai_key")      || "",
   };
 }
@@ -1207,7 +1210,7 @@ export function initUI({ Auth, DB }) {
 
     ge("btn-save-settings")?.addEventListener("click", async () => {
       const alias    = ge("field-alias")?.value.toLowerCase().trim().replace(/\s/g, "") || "";
-      const provider = ge("field-ai-provider")?.value || "gemini";
+      const provider = ge("field-ai-provider")?.value || "gemini-3.5-flash-lite";
       const key      = ge("field-ai-key")?.value.trim() || "";
 
       saveAISettings(provider, key);
@@ -1235,6 +1238,10 @@ export function initUI({ Auth, DB }) {
     ge("field-ai-provider")?.addEventListener("change", (e) => {
       const hints = {
         gemini: "Obtené tu clave en aistudio.google.com (gratuito)",
+        "gemini-3.5-flash-lite": "Obtené tu clave en aistudio.google.com (gratuito)",
+        "gemini-3.5-flash": "Obtené tu clave en aistudio.google.com (gratuito)",
+        "gemini-2.5-flash": "Obtené tu clave en aistudio.google.com (gratuito)",
+        "gemini-2.0-flash-lite": "Este modelo fue retirado; elegí Gemini 3.5 Flash-Lite o Flash.",
         claude: "Obtené tu clave en console.anthropic.com",
         openai: "Obtené tu clave en platform.openai.com",
       };
